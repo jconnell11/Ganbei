@@ -1,0 +1,5 @@
+#!/bin/bash
+
+cd /home/pi/Ganbei
+sudo python3 Ganbei_act.py
+

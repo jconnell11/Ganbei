@@ -1,0 +1,45 @@
+// terms associated with "people" ops and rules
+// ================================================
+
+// adjectives
+
+=[HQ]
+  visible
+  close
+  far away
+
+
+// -----------------------------------------
+
+// imperative verbs
+
+=[ACT]
+  offer
+  serve
+  look
+  come here
+  approach
+  wait
+  move
+  see
+
+
+// ================================================
+
+// irregular morphologies (npl, acomp, asup, vpres, vprog, vpast)
+
+=[XXX-morph]
+  visible * acomp = more visible
+  visible * asup   = most visible
+  far away * acomp = farther away
+  far away * asup  = farthest away
+  come here * vpast = came here
+  come here * vpres = comes here
+  come here * vprog = coming here
+  see * vpast = saw
+
+
+
+
+
+

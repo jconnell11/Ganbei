@@ -1,0 +1,12 @@
+[Unit]
+Description=Buttons & Battery
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=5
+ExecStart=/usr/bin/python3 /home/pi/Ganbei/mpi_buttons.py 
+ExecStop=/bin/systemctl kill mpi_buttons
+
+[Install]
+WantedBy=multi-user.target

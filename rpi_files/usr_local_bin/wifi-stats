@@ -1,0 +1,19 @@
+#!/bin/bash
+
+# 05/25/21 - dranch - minor fixes
+# 04/19/21 - dranch - original version
+
+echo -en "\nWifi Signal strength: "
+iw wlan0 station dump | grep signal | awk '{print $2}' 
+echo -e "   -70 dbm or less  : is a weak signal and the link will drop if it gets much weaker"
+echo -e "   -60 dbm to -50   : is a good signal"
+echo -e "   -40 dbm or better: is a great signal"
+
+echo -en "\nWifi RX speed: "
+iw wlan0 station dump | grep 'rx bitrate' | awk '{print $3}'
+echo -en "Wifi TX speed: "
+iw wlan0 station dump | grep 'tx bitrate' | awk '{print $3}'
+echo -en "Wifi session reconnects since last reboot (`uptime | awk '{print $3, $4}'` ago): "
+iw wlan0 station dump | grep failed | awk '{print $3}'
+
+echo " "
