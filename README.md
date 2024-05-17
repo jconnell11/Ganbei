@@ -13,7 +13,7 @@ When all the modifications are complete, you should be able to invoke the demo b
 
 You can also type to the robot if you prefer that to speaking. The easiest way is to connect via RealVNC and type the command "demo" (or alternatively "cd ~/Ganbei" then "sudo python3 Ganbei_act.py"). If you instead started the robot using the button, you can use the command "connect" (e.g. from a remote SSH session). No attention word is necessary when typing.
 
-Right now the robot can move on command (e.g. "drive forward" or "gaze up" or "shift left"). In general, it can perform all the sorts of learning shown in this [video](https://youtu.be/EjzdjWy3SKM). However, it cannot navigate, or find and grab objects yet. This will be possible eventually ...
+Right now the robot can move on command (e.g. "drive forward" or "gaze left" or "shift up"). In general, it can perform all the sorts of learning shown in this [video](https://youtu.be/EjzdjWy3SKM). However, it cannot navigate, or find and grab objects yet. This will be possible eventually ...
 
 ---
 
