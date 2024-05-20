@@ -10,12 +10,6 @@ Unfortunately, the Master Pi robot needs to be modified a bit. In terms of extra
 
 Be aware that installing the IMU will require drilling a couple of holes and soldering a few wires. 
 
-### Sound Card
-
-This is relatively easy. First, remove the back shell of the robot using 4 screws. Cut off one of the speaker cables near the connector, then plug the remaining speaker into the WaveShare dongle. Orient the speaker so the cable is toward the rear of the robot and use Gorilla double-sided tape to affix it to the left side of the arm base (sonar box). 
-
-Next, attach the USB extender cable to the dongle. Route it outside the front standoff (see [photo](../Herbie.jpg)), then inside the rear standoff, and finally make an S-curve into the back of the extension board. Affix the dongle (label facing inward) to the right side of the arm base using a small amount of Gorilla tape. The red and black speaker cable can be tucked under the dongle, and any excess can be stuffed inside the sonar box.
-
 ### Fan and Elbow
 
 The power cable from the fan does not fit where Hiwonder says (it is too fat). Instead, plug it into one of the two 4-pin header on the forward left side of the expansion board. The red wire should go to the frontmost pin.
@@ -23,6 +17,14 @@ The power cable from the fan does not fit where Hiwonder says (it is too fat). I
 To give the arm a better reach the elbow servo needs to be rotated 45 degrees. Start by manually adjusting the arm so it points straight up. After this, disassemble the elbow joint by undoing the 5 screws on the right side of the elbow (small servo) and pulling out the black pin and sleeve on the left. Extract the whole upper arm link and then remove the silver plate from the end of the servo.
 
 Rotate the plate 45 degrees so the holes form a square pattern with respect to the body of the servo (as opposed to the original diamond) and push it back on. Mate the upper and lower arm sections, then reinsert the black sleeve and plug on the left side. Finally, bend the upper arm so it is pointing 45 degrees forward and reinstall the 5 screws. 
+
+### Sound Card
+
+This is relatively easy. First, remove the back shell of the robot using 4 screws. Cut off one of the speaker cables near the connector, then plug the remaining speaker into the WaveShare dongle. Orient the speaker so the cable is toward the rear of the robot and use Gorilla double-sided tape to affix it to the left side of the arm base (sonar box). 
+
+Next, attach the USB extender cable to the dongle. Route it outside the front standoff (see [photo](../Herbie.jpg)), then inside the rear standoff, and finally make an S-curve into the back of the extension board. Affix the dongle (label facing inward) to the right side of the arm base using a small amount of Gorilla tape. The red and black speaker cable can be tucked under the dongle, and any excess can be stuffed inside the sonar box.
+
+![IMU Wiring](Herbie_guts.jpg)
 
 ### Inertial Measurement Unit
 
@@ -37,7 +39,7 @@ The IMU gets connected directly to the expansion board using 4 wires. I used a r
       board      TX  -yellow->  SCL   board
                  RX  <-green--  SDA
 
-Now install two 10mm long nylon spacers under the backshell in the holes you drilled using 2mm screws. Affix the diagonal corners of the IMU board to these spacers using two more 2mm screws. The components should be facing upwards (toward the shell) and the wires should come off the back edge of the board. Finally, restack the expansion board on the Raspberry Pi and reattach the modified backshell. 
+Now install two 10mm long nylon spacers under the backshell in the holes you drilled using M2x5 screws. Affix the diagonal corners of the IMU board to these spacers using two more M2x5 screws. The components should be facing upwards (toward the shell) and the wires should come off the back edge of the board. Finally, restack the expansion board on the Raspberry Pi and reattach the modified backshell. 
 
 ### Calibration
 
