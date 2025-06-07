@@ -1,24 +1,26 @@
 # Ganbei
-## Inexpensive Mobile Manipulator
+## An Inexpensive Mobile Manipulator
 
-This is a small, cheap ($400) robot with verbal interaction, symbolic learning, an arm, and 3D sensing (soon). It is a lightly modified version of the [Master Pi](https://www.hiwonder.com/products/masterpi?variant=39783006994519) available from Hiwonder. The robot uses the [ALIA](https://github.com/jconnell11/ALIA) cognitive library along with Python support code to run on a Raspberry Pi 4b. Check out this [video](https://youtu.be/qWLANb0PmbM) of some simple reasoning.
+This repository contains instructions and code for creating a small, cheap ($450) robot with verbal interaction, symbolic learning, an arm, and 3D sensing. It is a lightly modified version of the [Master Pi](https://www.hiwonder.com/products/masterpi?variant=39783006994519) platform available from Hiwonder. The robot uses the ALIA cognitive library along with Python support code to run on a Raspberry Pi 4b. Check out this [__video__](https://youtu.be/ncSaZPBFY3k) of Herbie autonomously stacking blocks.
 
-![Herbie robot](Herbie.jpg)
+![Herbie robot](doc/Herbie_TOF.jpg)
 
-### Getting Started
+## Overview
 
-There are a number of [software](doc/software.md) changes that should be performed first. After this, the robot needs a few [hardware](doc/hardware.md) modifications including the installation of a sound card and IMU. The basic robot and Pi 4 processor costs about $325 (with shipping), while the extensions add about $50.
+Start by assembling the MasterPi robot, which arrives in kit form. Next, download the Ganbei software image to a new SDHC card and install it. Finally, make the hardware modifications noted below. Some soldering and drilling is required.
 
-When all the modifications are complete, you should be able to invoke the demo by a short press of the __front__ button (approach from above) on the top circuitboard. Use a short press of the back button (approach under shell) to exit. A long press of the back button will cleanly shut down the robot, but you must still power it off manually. Note, you will need to say "robot" or the network name of the machine (e.g. "Herbie") to get the robot's attention (eyes turn green). 
+1. [Parts List](doc/parts_list.md)
+2. [Software Installation](doc/software.md)
+3. [Hardware Modifications](doc/hardware.md)
+4. [Credentials & Calibration](doc/calibration.md)
+5. [Robot Operation](doc/operation.md)
 
-You can also type to the robot if you prefer that to speaking. The easiest way is to connect via RealVNC and type the command "demo" (or alternatively "cd ~/Ganbei" then "sudo python3 Ganbei_act.py"). If you instead started the robot using the button, you can use the command "connect" (e.g. from a remote SSH session). No attention word is necessary when typing.
-
-Right now the robot can move on command (e.g. "drive forward" or "gaze left" or "shift up"). In general, it can perform all the sorts of learning shown in this [video](https://youtu.be/EjzdjWy3SKM). However, it cannot navigate, or find and grab objects yet. This will be possible eventually ...
+To run the robot, press the button on its back to start the application then speak to it in English. You can directly move the robot ("Drive forward"), ask it questions ("Do you see a red object?"), or teach it new things ("To snatch an object grab it"). This [__video__](https://youtu.be/qWLANb0PmbM) shows some simple reasoning, while this [__video__](https://youtu.be/EjzdjWy3SKM) demonstrates the utility of teaching (on an older robot).
 
 For a somewhat fancier version see [Wansui](https://github.com/jconnell11/Wansui).
 
 ---
 
-May 2024 - Jonathan Connell - jconnell@alum.mit.edu
+June 2025 - Jonathan Connell - jconnell@alum.mit.edu
 
 

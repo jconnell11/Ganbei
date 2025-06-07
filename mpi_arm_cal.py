@@ -9,7 +9,7 @@
 #
 # =========================================================================
 #
-# Copyright 2024 Etaoin Systems
+# Copyright 2025 Etaoin Systems
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,102 +25,126 @@
 # 
 # =========================================================================
 
-import time, yaml, sys
+import time, yaml, socket, sys
 import getch             # sudo pip3 install getch
 
 sys.path.append('/home/pi/MasterPi/HiwonderSDK')
 import Board
+ 
+
+# -------------------------------------------------------------------------
+
+# load "deviation" file into global servo offset variables
+
+def load_devs():  
+  global goff, woff, eoff, soff, boff
+  with open("/home/pi/MasterPi/Deviation.yaml", 'r') as f:
+    data = yaml.load(f, Loader=yaml.FullLoader)
+  goff = data.get('1', 0)
+  woff = data.get('3', 0)
+  eoff = data.get('4', 0)
+  soff = data.get('5', 0)
+  boff = data.get('6', 0)
+
+# save global servo offset variables to "deviation" file
+
+def save_devs():
+  global goff, woff, eoff, soff, boff
+  with open("/home/pi/MasterPi/Deviation.yaml", 'w') as f:
+    yaml.dump({'1':goff, '3':woff, '4':eoff, '5':soff, '6':boff}, f)
+  print("Saved servo offsets in: MasterPi/Deviation.yaml")
 
 
-# move the robot to pre-calibration pose then canonical 
-# default arm straight, later phases modify elbow and wrist bend
+# load "calib" file into global servo angular scale factors
+# default scaling = 2000us / 180 degs = 11.1
 
-def test_dev(sid, de =0, dw =0, t0 =0):
-
-  # precalibration pose (so it will twitch)
-  t = 1500 if sid == 0 else t0
-  ep = int(11.3636 * de + 0.5)
-  wp = int(11.3636 * dw + 0.5)
-  if sid == 0 or sid == 6:
-    Board.setPWMServoPulse(6, 1550, t)         # base
-  if sid == 0 or sid == 5:
-    Board.setPWMServoPulse(5, 2050, t)         # shoulder
-  if sid == 0 or sid == 4:
-    Board.setPWMServoPulse(4, 1050 + ep, t)    # elbow
-  if sid == 0 or sid == 3:
-    Board.setPWMServoPulse(3, 1450 + wp, t)    # wrist
-  if sid == 0 or sid == 1:
-    Board.setPWMServoPulse(1, 1550, t)         # gripper
-  time.sleep(0.2 + 0.001 * t)
-
-  # calibration configuration
-  if sid == 0 or sid == 6:
-    Board.setPWMServoPulse(6, a2p(0),     0)   # base
-  if sid == 0 or sid == 5:
-    Board.setPWMServoPulse(5, a2p(45),    0)   # shoulder 
-  if sid == 0 or sid == 4:
-    Board.setPWMServoPulse(4, a2p(de-45), 0)   # elbow 
-  if sid == 0 or sid == 3:
-    Board.setPWMServoPulse(3, a2p(dw),    0)   # wrist 
-  if sid == 0 or sid == 1:
-    Board.setPWMServoPulse(1, a2p(0),     0)   # gripper
-  time.sleep(0.2)
+def load_scale():
+  global gsc, wsc, esc, ssc, bsc
+  cfile = "config/" + socket.gethostname() + "_servo.yaml"
+  with open(cfile, 'r') as f:
+    data = yaml.load(f, Loader=yaml.FullLoader)
+  gsc = data.get('g_sc', 13.6)
+  wsc = data.get('w_sc', 11.1)
+  esc = data.get('e_sc', 11.1)
+  ssc = data.get('s_sc', 11.1)
+  bsc = data.get('b_sc', 11.1)
 
 
-# get servo pulse length before correction
-# empirically 800-2200 -> 123 degs, so 176 deg full swing
+# save global servo angular scale variables to "calib" file
+# file has other values that must be preserved
 
-def a2p(ang):
-  return int(11.3636 * ang + 1500 + 0.5)
+def save_scale():
+  global gsc, wsc, esc, ssc, bsc
+  cfile = "config/" + socket.gethostname() + "_servo.yaml"
+  with open(cfile, 'r') as f:
+    data = yaml.load(f, Loader=yaml.FullLoader)
+  data['g_sc'] = gsc
+  data['w_sc'] = wsc
+  data['e_sc'] = esc
+  data['s_sc'] = ssc
+  data['b_sc'] = bsc
+  with open(cfile, 'w') as f:
+    yaml.dump(data, f, sort_keys=False)
+  print("Saved scale factors in: %s" % (cfile))
 
 
-# change some joint deviation using keyboard
-# negative sid reverses meaning of arrow keys
+# -------------------------------------------------------------------------
+
+# change some joint pulse width using arrow keys 
 # stops whole program if 'q', exits if 'enter'
 
-def keyb_alt(servo, data, de =0, dw =0):
+def solicit(sid, pw0, prompt):
 
-  # set up target ID and direction
-  inc = 5 if servo >= 0 else -5
-  sid = abs(servo)
-  if de != 0 or dw != 0:
-    test_dev(sid, de, dw, 500)
-  print("  jt", sid, "=", data[str(sid)], "   ", end = "\r")
+  # set servo to initial angle
+  pw = int(pw0 + 1500)
+  Board.setPWMServoPulse(sid, pw, 1000)
+  time.sleep(1)
+
+  # accept user updates of pulse width
+  print("  %s%4d " % (prompt, pw), end="")
+  sys.stdout.flush()
   while True:
 
-    # loop until some exit condition
+    # check for some exit condition
     ch = getch.getch()
     if ch == 'q' or ch == 'Q':
-      print("\n")
+      print("\n\nQuit!")
       sys.exit()
     if ch == '\x0A':
-      return
-    
-    # look for some arrow key (has "ESC[" prefix)
-    if ch != '\x1B':
-      continue
-    if getch.getch() != '[':
-      continue
-    ch = getch.getch()
+      break
 
-    # alter relevant deviation value
+    # alter deviation value (arrows prefixed by ESC)
     if ch == 'A' or ch == 'C':
-      data[str(sid)] += inc
+      pw += 5
     elif ch == 'B' or ch == 'D':  
-      data[str(sid)] -= inc
+      pw -= 5
     else:
       continue
-    print("  jt", sid, "=", data[str(sid)], "   ", end = "\r")
-  
-    # save changed value to file then move arm to check again 
-    try:
-      with open("/home/pi/MasterPi/Deviation.yaml", 'w') as f:
-        yaml.dump(data, f)
-    except:
-      print("\nCould not write calibration file!")
-      sys.exit()
-    test_dev(sid, de, dw)  
- 
+    print("          \r  %s%4d " % (prompt, pw), end="")
+    sys.stdout.flush()
+
+    # actually adjust servo (twitch)
+    Board.setPWMServoPulse(sid, pw - 50, 0)
+    time.sleep(0.2)
+    Board.setPWMServoPulse(sid, pw, 0)
+
+  # end prompt line and give best value
+  print()
+  return pw
+
+
+# determine zero offset width and scaling for servo based on lo and hi
+# "dev" is the current calibration from the "deviation" file
+# assumes "degs" is symmetric around servo neutral (1500us) position
+
+def swing(dev, lo, hi, degs =90):
+  sc  = (hi - lo) / degs
+  sc = round(sc, 2)
+  off = int((hi + lo) / 2 - 1500)
+  off += dev
+  print("    dev %d, sc %5.2f\n" % (off, sc))
+  return off, sc
+
 
 # =========================================================================
 
@@ -128,34 +152,66 @@ def keyb_alt(servo, data, de =0, dw =0):
 
 if __name__ == "__main__":
 
-  # read current servo deviations (if any)
-  print('Getting ready to alter file ~/MasterPi/Deviation.yaml ...')
-  try:
-    with open("/home/pi/MasterPi/Deviation.yaml", 'r') as f:
-      data = yaml.load(f, Loader=yaml.FullLoader)
-  except:
-    data = {'1':0, '3':0, '4':0, '5':0, '6':0}
+  # read default values
+  global goff, woff, eoff, soff, boff
+  global gsc, wsc, esc, ssc, bsc
+  load_devs()
+  load_scale()
 
   # initialize arm pose
-  test_dev(0)
-  print('Change joint angles using arrow keys to calibrate')
-  print('Hit ENTER to go to next step, q to quit')
+  print("Posing arm ... ", end="")
+  sys.stdout.flush()
+  Board.setPWMServoPulse(4, 1000, 1000)          # elbow inline
+  time.sleep(1)
+  Board.setPWMServoPulse(5, 1500, 1000)          # shoulder diagonal up
+  time.sleep(1)
+  Board.setPWMServoPulse(3, 1000, 1000)          # wrist inline
+  time.sleep(1)
+  Board.setPWMServoPulse(6, 1500, 1000)          # arm forward
+  time.sleep(1)
+  Board.setPWMServoPulse(1, 1648, 1000)          # gripper open
+  time.sleep(1)
+  print()
 
-  # adjust joints saving values at each step
-  print('\nBase: make arm point along centerline of robot body ...')
-  keyb_alt(-6, data)
-  print('\nGripper: adjust so finger opening under stress is 23mm ...')
-  keyb_alt(1, data)
-  print('\nElbow: move axis onto straight edge from shoulder to wrist ...')
-  keyb_alt(-4, data)
-  print('\nWrist: align gripper jaws with straightened arm ...')
-  keyb_alt(3, data)
-  
-  # improve accuracy of kinematics
-  print('\n\nShoulder: elevate so finger pads are 276mm above surface ...')
-  keyb_alt(-5, data)
-  print('\nElbow (again): bend so finger pads are 170mm above surface ...')
-  keyb_alt(-4, data, 45)
-  print('\nWrist (again): bend so finger pads are 108mm above surface ...')
-  keyb_alt(3, data, 45, -45)
-  print('\nAll steps completed')
+  # short instructions
+  print("Change joint angles using arrow keys to calibrate")
+  print("Pay special attention to crosses formed by 4 screws")
+  print("Hit ENTER to go to next step, q to quit\n")
+
+  # shoulder calibration  
+  hi = solicit(5,  45 * ssc, "Shoulder - exactly horizontal: ")
+  lo = solicit(5, -45 * ssc, "           exactly vertical:   ")
+  soff, ssc = swing(soff, lo, hi)
+
+  # elbow calibration
+  hi = solicit(4,  45 * esc, "Elbow - bend perpendicular (horizontal):  ")
+  lo = solicit(4, -45 * esc, "        align with lower link (vertical): ")
+  eoff, esc = swing(eoff, lo, hi)
+
+  # wrist calibration
+  hi = solicit(3,  45 * wsc, "Wrist - align jaws with link (vertical): ")
+  lo = solicit(3, -45 * wsc, "        bend perpendicular (horizontal): ")
+  woff, wsc = swing(woff, lo, hi)
+
+  # gripper calibration
+  hi = solicit(1,  13.3 * gsc, "Gripper: open jaws to 46mm (1.8\") under pressure:  ")
+  lo = solicit(1, -13.3 * gsc, "         close jaws until touching under pressure: ")
+  goff, gsc = swing(goff, lo, hi, 26.6)
+
+  # base calibration (shoulder horizontal)
+  Board.setPWMServoPulse(5, int(1500 + soff + 45 * ssc), 1000)
+  time.sleep(1)
+  hi = solicit(6,   0,       "Base - point arm straight forward: ") 
+  boff += hi - 1500
+  lo = solicit(6, -45 * bsc, "       grasp to 85mm (3.3\") right: ")
+  bsc = (hi - lo) / 45.0
+  bsc = round(bsc, 2)
+  print("    dev %d, sc %5.2f\n" % (boff, bsc))
+
+  # record values
+  save_devs()
+  save_scale()
+
+
+
+

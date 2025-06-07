@@ -4,7 +4,7 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright 2023-2024 Etaoin Systems
+// Copyright 2023-2025 Etaoin Systems
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -59,6 +59,7 @@ public:
   int Start (int sh =0);
 
   // main functions
+  void Emotion (int feel =6, int very =0);
   void Say (const char *txt);
   int Mouth ();
   void Done ();

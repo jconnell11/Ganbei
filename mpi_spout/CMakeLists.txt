@@ -16,10 +16,11 @@ include_directories(
 ## Build ##
 ###########
 
-# Set build type
+# Set build type and output location
 set(CMAKE_BUILD_TYPE Release)	
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "lib")
 
-# Make shared library (in lib subdirectory)
+# Make shared library 
 add_library(mpi_spout SHARED
   src/mpi_spout.cpp
   src/jhcMpiSpout.cpp

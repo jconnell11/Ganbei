@@ -34,18 +34,21 @@ if mode == None or mode < 0:
 elif mode == GPIO.BOARD:
   __HORN_PIN = 31
 
-__RGB_COUNT = 2
-__RGB_PIN = 12                         # always!
-__RGB_FREQ_HZ = 800000
-__RGB_DMA = 10
-__RGB_BRIGHTNESS = 120
-__RGB_CHANNEL = 0
-__RGB_INVERT = False
-RGB = PixelStrip(__RGB_COUNT, __RGB_PIN, __RGB_FREQ_HZ, __RGB_DMA, __RGB_INVERT, __RGB_BRIGHTNESS, __RGB_CHANNEL)
-RGB.begin()
-for i in range(RGB.numPixels()):
-    RGB.setPixelColor(i, PixelColor(0,0,0))
-    RGB.show()
+
+# JHC: back board LED communication breaks V4L2 camera!
+#__RGB_COUNT = 2
+#__RGB_PIN = 12                         # always!
+#__RGB_FREQ_HZ = 800000
+#__RGB_DMA = 10
+#__RGB_BRIGHTNESS = 120
+#__RGB_CHANNEL = 0
+#__RGB_INVERT = False
+#RGB = PixelStrip(__RGB_COUNT, __RGB_PIN, __RGB_FREQ_HZ, __RGB_DMA, __RGB_INVERT, __RGB_BRIGHTNESS, __RGB_CHANNEL)
+#RGB.begin()
+#for i in range(RGB.numPixels()):
+#    RGB.setPixelColor(i, PixelColor(0,0,0))
+#    RGB.show()
+
 
 def setMotor(index, speed):
     if index < 1 or index > 4:

@@ -4,7 +4,7 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright 2023-2024 Etaoin Systems
+// Copyright 2023-2025 Etaoin Systems
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@
 #include <math.h>
 #include <unistd.h>
 #include <string.h>
+#include <time.h>
 
 #include <jhcFestTTS.h>
 
@@ -68,14 +69,61 @@ int jhcMpiSpout::Start (int sh)
 //                              Main Functions                           //
 ///////////////////////////////////////////////////////////////////////////
 
+//= Set prosody for next utterance based on current emotion.
+// feel: 0 bored, 1 happy, 2 sad, 3 angry, 4 scared, 5 excited
+// use spout_emo(5, 0) for default neutral tone
+// cf. Burkhardt + Sendlmeier 2000 "... Acoustical Correlates ..."
+
+void jhcMpiSpout::Emotion (int feel, int very)
+{
+  float k = 1.0;                         // exaggeration
+
+  if ((feel <= 0) && (very > 0))         // bored          
+    tts.Prosody(-10, -25, -10, k);
+  else if (feel <= 0)                    // tired         
+    tts.Prosody(-5, -12, -5, k);
+
+  else if ((feel == 1) && (very > 0))    // happy         
+    tts.Prosody(20, 50, 0, k);
+  else if (feel == 1)                    // pleased       
+    tts.Prosody(10, 50, 0, k);
+
+  else if ((feel == 2) && (very > 0))    // sad           
+    tts.Prosody(-10, -10, -20, k);
+  else if (feel == 2)                    // discontent    
+    tts.Prosody(-5, -5, -10, k);
+
+  else if ((feel == 3) && (very > 0))    // angry         
+    tts.Prosody(-10, 50, 15, k);
+  else if (feel == 3)                    // annoyed       
+    tts.Prosody(-5, 25, 7, k);
+
+  else if ((feel == 4) && (very > 0))    // scared        
+    tts.Prosody(25, -25, 15, k);
+  else if (feel == 4)                    // wary          
+    tts.Prosody(12, -12, 7, k);
+
+  else if (very > 0)                     // excited       
+    tts.Prosody(10, 50, 20, k);
+  else                                   // neutral
+    tts.Prosody(0, 0, 0, k);
+}
+
+
 //= Convert text to audio and start playing (does not block).
 // requests phoneme file then build lip sync in background 
 
 void jhcMpiSpout::Say (const char *txt)
 {
+  timespec one_sec;
+
   tts.Prep(txt);            // causes tts.Poised() > 0
   if (building > 0)
-    pthread_join(build, 0);
+  {
+    clock_gettime(CLOCK_REALTIME, &one_sec); 
+    one_sec.tv_sec += 1; 
+    pthread_timedjoin_np(build, 0, &one_sec);
+  }
   building = 1;
   pthread_create(&build, NULL, lips, (void *) this);
 }
@@ -152,8 +200,14 @@ int jhcMpiSpout::Mouth ()
 
 void jhcMpiSpout::Done ()
 {
+  timespec one_sec;
+
   if (building > 0)
-    pthread_join(build, 0);
+  {
+    clock_gettime(CLOCK_REALTIME, &one_sec); 
+    one_sec.tv_sec += 1; 
+    pthread_timedjoin_np(build, 0, &one_sec);
+  }
   building = 0;
   tts.Done();
 }

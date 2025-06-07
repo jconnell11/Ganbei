@@ -1,0 +1,128 @@
+// terms associated with "SceneVis" ops and rules
+// ================================================
+
+// singular nouns
+
+=[AKO]
+  distance
+  size
+  length
+  width
+  height
+  color
+  closeness
+  farness
+  bigness
+  smallness
+  longness
+  compactness
+  wideness
+  narrowness
+  thickness
+  thinness
+  tallness
+  shortness
+  redness
+  orangeness
+  yellowness
+  greenness
+  blueness
+  purpleness
+  blackness
+  grayness
+  whiteness
+  object
+  comparison
+  nearness
+  largeness
+  fatness
+  skinniness
+  chunkiness
+
+
+// adjectives
+
+=[HQ]
+  close
+  medium close
+  far
+  big
+  medium big
+  small
+  long
+  medium long
+  compact
+  wide
+  medium wide
+  narrow
+  thick
+  medium thick
+  thin
+  tall
+  medium tall
+  short
+  red
+  orange
+  yellow
+  green
+  blue
+  purple
+  black
+  gray
+  white
+  leftmost
+  rightmost
+  middle
+  visible
+  near
+  large
+  fat
+  skinny
+  chunky
+
+
+// -----------------------------------------
+
+// imperative verbs
+
+=[ACT]
+  see
+  look
+  locate
+  search for
+
+
+// adverbial modifiers
+
+=[MOD]
+  visually
+
+
+// ================================================
+
+// irregular morphologies (npl, acomp, asup, vpres, vprog, vpast)
+
+=[XXX-morph]
+  far * acomp = farther
+  far * asup  = farthest
+  orange * acomp = oranger
+  orange * asup  = orangest
+  yellow * acomp = yellower
+  yellow * asup  = yellowest
+  blue * acomp = bluer
+  blue * asup  = bluest
+  purple * acomp = purpler
+  purple * asup  = purplest
+  leftmost * acomp = more leftmost
+  leftmost * asup  = most leftmost
+  rightmost * acomp = more rightmost
+  rightmost * asup  = most rightmost
+  visible * acomp = more visible
+  visible * asup  = most visible
+  large * acomp = larger
+  large * asup = largest
+  see * vpast = saw
+  search for * vpres = searches for
+  search for * vpast = searched for
+  search for * vprog = searching for
+

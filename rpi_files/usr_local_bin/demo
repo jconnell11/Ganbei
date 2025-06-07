@@ -1,5 +1,5 @@
 #!/bin/bash
 
 cd /home/pi/Ganbei
-sudo python3 Ganbei_act.py
+sudo python3 Ganbei_vis.py $1
 

@@ -4,7 +4,7 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright 2023-2024 Etaoin Systems
+// Copyright 2023-2025 Etaoin Systems
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -55,15 +55,16 @@ private:
   char ph[10];
   FILE *in;
   pthread_t synth, play;
-  int prepping, emitting;
-
+  double fmult, imult, rmult;  
+  int ok, prepping, emitting;
+  
 
 // PUBLIC MEMBER VARIABLES
 public:
-  int freq;        // voice pitch
-  int infl;        // pitch variation
+  int freq;        // base voice pitch
+  int infl;        // base pitch variation
+  int slow;        // base phrase stretch
   int shift;       // formant raising
-  int slow;        // stretch phrase
 
 
 // PUBLIC MEMBER FUNCTIONS
@@ -74,6 +75,7 @@ public:
   int Start (int vol =0);  
 
   // main functions
+  void Prosody (int fpc, int ipc, int rpc, float drama =1.0);
   void Prep (const char *txt);
   int Poised ();
   const char *Phoneme (float& secs);
@@ -86,11 +88,11 @@ public:
 private:
   // creation and initialization
   void shutdown ();
-  void make_prolog ();
 
   // background thread functions
   void kill_prep ();
   static void *generate (void *tts);
+  void make_prolog ();
   void kill_emit ();
   static void *speak (void *dummy);
 

@@ -1,58 +1,84 @@
-## Hardware Changes
+# Hardware Modifications
 
-Unfortunately, the Master Pi robot needs to be modified a bit. In terms of extra parts you will need:
+First, assemble the MasterPi robot following Hiwonder's instructions. This takes roughly 3 hours. After this, the required changes to the stock robot are:
 
-* WaveShare USB soundcard + speakers ($18 from [Amazon](https://www.amazon.com/waveshare-USB-Converter-Speaker-Raspberry/dp/B08RX4DNJ4))
+1. [Minor Changes](#minor)
+1. [Servo Rotation](#servo)
+2. [Power Converter](#power)
+3. [IMU Installation](#imu)
+4. [Audio Components](#audio)
+5. [TOF Mounting](#tof)
 
-* right-angle 6" USB extender ($7 from [Amazon](https://www.amazon.com/gp/product/B083TGBMR4)) 
-    
-* 9-DOF BNO085 breakout board ($25 from [AdaFruit](https://www.adafruit.com/product/4754))
+<a name="minor"></a>
+## Minor Changes
 
-Be aware that installing the IMU will require drilling a couple of holes and soldering a few wires. 
+Unfortunately, the __fan cable__ does not fit where Hiwonder says (it is too fat). Instead, plug it into one of the two 4-pin header on the forward left side of the expansion board. The red wire should go to the frontmost pin.
 
-### Fan and Elbow
+The sonar transducers on the front are never used for ranging. Instead, the associated LEDs are used for expressing internal state. To make the colors more visible from various angles, apply a piece of white __vinyl tape__ to the front of each shiny tube. Trim around the periphery using an X-acto knife.
 
-The power cable from the fan does not fit where Hiwonder says (it is too fat). Instead, plug it into one of the two 4-pin header on the forward left side of the expansion board. The red wire should go to the frontmost pin.
+<a name="servo"></a>
+## Servo Rotation
 
-To give the arm a better reach the elbow servo needs to be rotated 45 degrees. Start by manually adjusting the arm so it points straight up. After this, disassemble the elbow joint by undoing the 5 screws on the right side of the elbow (small servo) and pulling out the black pin and sleeve on the left. Extract the whole upper arm link and then remove the silver plate from the end of the servo.
+To better reach and view the floor, the arm needs to curl in on itself. For this reason the shoulder, elbow, and wrist servos all need to be rotated so their neutral positions are 45 degrees forward. You can set the servos to the middle of their ranges by running the command below. When you are done with the adjustments this should give the arc shown in the picture.
 
-Rotate the plate 45 degrees so the holes form a square pattern with respect to the body of the servo (as opposed to the original diamond) and push it back on. Mate the upper and lower arm sections, then reinsert the black sleeve and plug on the left side. Finally, bend the upper arm so it is pointing 45 degrees forward and reinstall the 5 screws. 
+```
+python3 Ganbei/servo_test.py
+```
 
-### Sound Card
+Fix the joints one at a time staring from the wrist. Disassemble each joint by undoing the 5 screws on the right side of the servo. Next pull out the black pin and sleeve on the left (or undo 4 screws for the shoulder). Extract the whole upper link and then remove the __circular plate__ from the end of the servo. Rotate the plate 45 degrees so the holes form a square pattern with respect to the body of the servo (as opposed to the original diamond) and push it back on. Re-mate the arm sections, then reinsert the black sleeve and plug on the left side. Finally, bend each joint so it is pointing 45 degrees forward and reinstall the 5 screws on the right. 
 
-This is relatively easy. First, remove the back shell of the robot using 4 screws. Cut off one of the speaker cables near the connector, then plug the remaining speaker into the WaveShare dongle. Orient the speaker so the cable is toward the rear of the robot and use Gorilla double-sided tape to affix it to the left side of the arm base (sonar box). 
+![Servo Changes](servo_45_mark.jpg)
 
-Next, attach the USB extender cable to the dongle. Route it outside the front standoff (see [photo](../Herbie.jpg)), then inside the rear standoff, and finally make an S-curve into the back of the extension board. Affix the dongle (label facing inward) to the right side of the arm base using a small amount of Gorilla tape. The red and black speaker cable can be tucked under the dongle, and any excess can be stuffed inside the sonar box.
+There is also a problem where the forward flange of the elbow servo tends to break off. To maintain arm rigidity, remove the front screw so that the metallic link can be separated slightly from the servo body. Create a stack of 3 squares of Gorilla double-side tape and stick this __pad__ on top of the servo body. Finally, squeeze the servo and link back together and reinstall the front screw (or not).
 
-![IMU Wiring](Herbie_guts.jpg)
+<a name="power"></a>
+## Power Converter
 
-### Inertial Measurement Unit
+The camera and TOF sensor are somewhat finicky and really do not like power glitches. When a heavy load switches on, like the main wheels turning or one of the servos stalling, the battery voltage can droop precipitously. To help ameliorate this problem, we replace the Hiwonder DC-DC converter with a Pololu unit having a very low dropout voltage (only 0.6 volts at 3+ amps). To make this change, carefully __unsolder__ the original small power board by heating up the 4 corner contacts while gently prying underneath.
 
-This small board mounts rightside-up under the backshell and is held up by two diagonally placed nylon spacers left over from the original Master Pi assembly. The most fraught part is drilling the holes for these. First, remove the backshell and mark the drilling locations using a Sharpie. One should be 25mm back from the front edge and 16mm in from the right crease. The other should be 43mm back and 36mm in. Place the IMU circuitboard over your marks to make sure they align with holes on the board. When satisfied, use a 2.1mm (5/64") bit to pierce the backshell.
+![Power Wiring](power_wiring_mark.jpg)
 
-Next, configure the IMU for UART mode by using a blob of solder to bridge the "PS1" pads on the back of the board.
+Next prepare __4 wires__ of 22 gauge about 2.5" (6cm) long. Solder these to the "VIN", "OUT", and two "GND" pads on the Pololu board (see [diagram](https://www.pololu.com/product/4892/pictures#lightbox-picture0J12273)). Carefully surface solder the other ends of the input wires to the front pads for the original converter, with "VIN" toward the middle. Then solder the output wires into the holes directly in front of this, with "VOUT" to the one marked "5V". Finally, __insulate__ the converter board by encasing it in a piece of large-diameter heatshrink tubing (or wrap it with electrical tape). The converter will be free-floating inside the shell cavity.
 
-The IMU gets connected directly to the expansion board using 4 wires. I used a roughly 120mm long section of old modular telephone cable, which conveniently has 4 different colored wires (black, red, green, yellow). The wires run from one edge of the IMU board (solder them on the component side) to a series of pads near the front center of the expansion board (near the empty rectangle). You will have to separate the expansion board from the Raspberry Pi underneath in order to solder these. The proper pattern is:
+<a name="imu"></a>
+## IMU Installation
+
+The Masterpi has no odometry, making it very hard to tell how far the robot has turned. Adding an inertial measurement unit helps overcome this difficulty. Start by configuring the small IMU board for UART mode by using a blob of solder to __bridge__ the "PS1" pads on the back. 
+
+![IMU Wiring](IMU_wiring_mark.jpg)
+
+Next, connect the unit directly to the expansion board using __4 wires__ about 5" (125
+mm) long. I used a section of old modular telephone cable, which conveniently has 4 different colored wires (black, red, green, yellow). The wires run from one edge of the IMU board (solder them on the component side) to a series of pads near the front center of the expansion board. You will have to separate the expansion board from the Raspberry Pi underneath in order to solder these. The proper pattern is:
     
                  5V  ---red-->  5V 
     expansion   GND  --black->  GND    IMU
       board      TX  -yellow->  SCL   board
                  RX  <-green--  SDA
 
-Now install two 10mm long nylon spacers under the backshell in the holes you drilled using M2x5 screws. Affix the diagonal corners of the IMU board to these spacers using two more M2x5 screws. The components should be facing upwards (toward the shell) and the wires should come off the back edge of the board. Finally, restack the expansion board on the Raspberry Pi and reattach the modified backshell. 
+This small board mounts rightside-up under the backshell and is held up by two diagonally placed nylon spacers left over from the original Master Pi assembly. Start by __drilling__ two small holes (2.1mm or 5/64" diameter) in the backshell. One should be 5mm back from the front edge and 17mm in from the right crease. The other should be 23mm back and 37mm in. Now, using M2x5 screws, install two 10mm long nylon spacers under the backshell in the holes you drilled. Affix the diagonal corners of the IMU board to these spacers using two more M2x5 screws. 
 
-### Calibration
+<a name="audio"></a>
+## Audio Components
 
-After all the [software](software.md) has been installed, open a command window, cd to the Ganbei directory, then run "sudo python3 imu_calib.py". Now pick up the robot and slowly rotate it through all 3 axes. Keep hitting ENTER until status = 3, then hit 's' to permanently save the values to the board.
+The speaker and the audio dongle are attached to the sides of the arm base box (as can be seen in the [main image](Herbie_TOF.jpg)). Using double-sided Gorilla tape mount the __speaker__ centered on the left side of the box. Make sure that the red and black wires come out the back. Similarly, use Gorilla tape to affix the __Waveshare__ audio dongle to the right side of the box. It should be cenetered vertically and flush to the front with its USB connector facing backwards. Finally, route the speaker wire around the back and under the dongle so that it plugs into the front. Any excess cable length can be crammed inside the arm base box.
 
-You should also probably calibrate the offsets for the arm servos. Again, from the Ganbei directory run "sudo python3 arm_calib.py" and follow the directions. This will write new values to the ~/MasterPi/Deviation.yaml file.
+![USB Cables](USB_cables_mark.jpg)
 
-### Batteries (optional)
+The Waveshare device does not seem to play well with other USB peripherals (at least on the Raspberry Pi) so it is isolated with a USB __splitter__ box. To install this, start by wrapping the input lead of the splitter once around the back brass support post and plugging it into the lower middle USB port of the Rapsberry Pi. Next, wrap the lower output lead of the splitter once around the front brass support post and plug it into the Waveshare unit. Feed the top lead under this one and mount its connector vertically to the main chassis with a small piece of Gorilla tape. It should be pretty far forward and have its strain-relief section smashed up against the brass support post. The cable from the Time-of-Flight sensor will plug in here.
 
-You can significantly extend the run-time of the robot by using higher capacity batteries. I use two [Samsung 35E](https://www.18650batterystore.com/products/samsung-35e-button-top) cells (total $16) and an [XTAR fast charger](https://www.amazon.com/gp/product/B0BS9HKYYS) (about $26) with a [3A USB brick](https://www.amazon.com/gp/product/B07QK7PXZK) ($16 for 4). The Hiwonder supplied batteries and charger, however, are adequate.
+<a name="tof"></a>
+## TOF Mounting
+
+The Time-of-Flight sensor produces a 100x100 depth image at about 18Hz that is used to find objects. It is mounted at the end of the arm above the color camera using a custom __bracket__. Start by cutting a 32mm long section of 1/2" L-shaped aluminum [extrusion](https://www.homedepot.com/p/Everbilt-1-2-in-x-3-ft-1-16-in-Thick-Aluminum-Angle-6442/332733650). Next, drill two small holes (2.1mm or 5/64" diameter) in the bracket. They should be 24mm apart and 5mm down from the crease.
+
+![TOF Mounting](TOF_mount_mark2.jpg)
+
+Remove the back 2 screws on the top camera mounting standoffs then reinstall them with the new bracket on top with the "shelf" section forward. Affix the TOF sensor to the shelf on top using a small strip of Gorilla __tape__ so that its right side is flush with the end of the bracket. Snip off the plastic mounting lugs on the right side of the sensor. 
+
+After this, run the right-angle USB C cable through the back hole in the orginal camera mount then up to the left side of the sensor. You also need to add 2 __tiewraps__ to the camera cable where it exists the camera mount, since wiggling the cable often causes the camera to drop out! The TOF cable then follows the camera cable down along the outside of the arm (remove and reinstall the 2 loose tiewraps holding the pair close). Finally, run the TOF cable under the left edge of the back shell and across to the USB splitter connector mounted on the right side of the robot.
 
 ---
 
-May 2024 - Jonathan Connell - jconnell@alum.mit.edu
+June 2025 - Jonathan Connell - jconnell@alum.mit.edu
 
 

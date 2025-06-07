@@ -4,7 +4,7 @@
 //
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright 2023-2024 Etaoin Systems
+// Copyright 2023-2025 Etaoin Systems
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -48,16 +48,22 @@ jhcFestTTS::~jhcFestTTS ()
 
 jhcFestTTS::jhcFestTTS ()
 {
-  // default values
+  // default voice
   freq  = 105;               // deep male pitch
   infl  = 13;                // moderate singsong
-  shift = 100;               // original tract length
   slow  = 120;               // speak more slowly
+  shift = 100;               // original tract length
+
+  // neutral emotion
+  fmult = 1.0;
+  imult = 1.0;
+  rmult = 1.0;
 
   // initialize state variables
   in = NULL;
   prepping = 0;
   emitting = 0;
+  ok = 0;
 }
 
 
@@ -73,7 +79,9 @@ int jhcFestTTS::Start (int vol)
   int rc;
 
   // stop Festival and phoneme enumeration if they are running
-  shutdown();
+  if (ok > 0)
+    shutdown();
+  ok = 0;
 
   // possibly set pulseaudio output device volume
   if (vol > 0)
@@ -86,6 +94,8 @@ int jhcFestTTS::Start (int vol)
   if (stat("/mnt/tts_ram", &sb) != 0)
   {
     if (system("sudo mkdir /mnt/tts_ram") != 0)
+      return -3;
+    if (system("sudo chmod a+w /mnt/tts_ram") != 0)
       return -2;
     if (system("sudo mount -t tmpfs -o size=1m tmpfs /mnt/tts_ram") != 0)
       return -1; 
@@ -93,12 +103,10 @@ int jhcFestTTS::Start (int vol)
 
   // start Festival TTS server (server eats 42MB of RAM with heap = 1M)
   // Note: Scheme environment can be slow to start (hence sleep)
-  if (system("festival --server --heap 1000000 > /dev/null 2>&1 &") != 0)  
+  if (system("sudo nice -n -20 festival --server --heap 1000000 > /dev/null 2>&1 &") != 0)  
     return 0;
   sleep(1.0);          
-
-  // extra instructions for each client call
-  make_prolog();
+  ok = 1;
   return 1;
 }
 
@@ -108,36 +116,28 @@ int jhcFestTTS::Start (int vol)
 void jhcFestTTS::shutdown ()
 {
   int rc;
-  
+
   kill_emit();
   kill_prep();
-  rc = system("pkill festival");   
-}
-
-
-//= Make preamble file to set speech characteristics and save phonemes.
-// Note: CG voices sound better but take 20-30x longer and 10x RAM!
-
-void jhcFestTTS::make_prolog ()
-{
-  int f0 = (int)(freq * 100.0 / shift + 0.5), std = (int)(0.01 * infl * f0 + 0.5);
-  FILE *out;
- 
-  if ((out = fopen("/mnt/tts_ram/config.scm", "w")) == NULL)
-    return;
-  fprintf(out, "(set! int_lr_params (append");
-  fprintf(out, " '((target_f0_mean %d) (target_f0_std %d))", f0, std);
-  fprintf(out, " (cddr int_lr_params)))\n");
-  fprintf(out, "(Parameter.set 'Duration_Stretch %4.2f)\n", 0.01 * slow);
-  fprintf(out, "(set! after_synth_hooks (lambda (utt) (begin");
-  fprintf(out, " (utt.wave.rescale utt 2.6) (utt.save.segs utt \"/mnt/tts_ram/phonemes.txt\") )))\n");
-  fclose(out);
+  rc = system("sudo pkill festival"); 
 }
 
 
 ///////////////////////////////////////////////////////////////////////////
 //                              Main Functions                           //
 ///////////////////////////////////////////////////////////////////////////
+
+//= Modify prosody parameters for pitch, inflection, and speech rate.
+// each value is a percentage increase or decrease in base value
+// overall scale factor "drama" can accentuate/diminish effect
+
+void jhcFestTTS::Prosody (int fpc, int ipc, int rpc, float drama)
+{
+  fmult = 1.0 + 0.01 * drama * fpc;
+  imult = 1.0 + 0.01 * drama * ipc;
+  rmult = 1.0 + 0.01 * drama * rpc;
+}
+
 
 //= Generate acoustic speech from text input but don't play it.
 // must poll Poised() then call Emit(), done when Talking() is zero
@@ -166,12 +166,15 @@ void jhcFestTTS::Prep (const char *txt)
 
 void jhcFestTTS::kill_prep ()
 {
+  timespec one_sec;
   int rc;
   
   if (Poised() != 0)
     return;
-  rc = system("pkill festival-client");
-  pthread_join(synth, NULL);
+  rc = system("sudo pkill festival-client");
+  clock_gettime(CLOCK_REALTIME, &one_sec); 
+  one_sec.tv_sec += 1; 
+  pthread_timedjoin_np(synth, 0, &one_sec);   
 }
 
 
@@ -186,6 +189,9 @@ void *jhcFestTTS::generate (void *tts)
   jhcFestTTS *me = (jhcFestTTS *) tts; 
   int rc;
 
+  // encode requested emotional variations to prosody
+  me->make_prolog();
+
   // possibly change overall pitch (soundstretch may not be needed)
   if (me->shift != 100)
     sprintf(post, "synth.wav; soundstretch synth.wav speech.wav -pitch=%3.1f > /dev/null 2>&1", 
@@ -195,6 +201,28 @@ void *jhcFestTTS::generate (void *tts)
   // run synthesis command and block until finished (usually less than a second)
   rc = system(cmd);
   return NULL;
+}
+
+
+//= Make preamble file to set speech characteristics and save phonemes.
+// Note: CG voices sound better but take 20-30x longer and 10x RAM!
+
+void jhcFestTTS::make_prolog ()
+{
+  double f0  = fmult * freq / (shift * 0.01);
+  double std = imult * (infl * 0.01) * f0;       // depends on fmult also
+  double dur = (slow * 0.01) / rmult; 
+  FILE *out;
+ 
+  if ((out = fopen("/mnt/tts_ram/config.scm", "w")) == NULL)
+    return;
+  fprintf(out, "(set! int_lr_params (append");
+  fprintf(out, " '((target_f0_mean %d) (target_f0_std %d))", int(f0 + 0.5), int(std + 0.5));
+  fprintf(out, " (cddr int_lr_params)))\n");
+  fprintf(out, "(Parameter.set 'Duration_Stretch %4.2f)\n", dur);
+  fprintf(out, "(set! after_synth_hooks (lambda (utt) (begin");
+  fprintf(out, " (utt.wave.rescale utt 2.6) (utt.save.segs utt \"/mnt/tts_ram/phonemes.txt\") )))\n");
+  fclose(out);
 }
 
 
@@ -253,12 +281,15 @@ void jhcFestTTS::Emit ()
 
 void jhcFestTTS::kill_emit ()
 {
+  timespec one_sec;
   int rc;
 
   if (Talking() <= 0)
     return;
-  rc = system("pkill aplay");
-  pthread_join(play, NULL);
+  rc = system("sudo pkill aplay");
+  clock_gettime(CLOCK_REALTIME, &one_sec); 
+  one_sec.tv_sec += 1; 
+  pthread_timedjoin_np(play, 0, &one_sec);   
   if (in != NULL)
     fclose(in);
   in = NULL;
@@ -273,7 +304,7 @@ void *jhcFestTTS::speak (void *dummy)
 {
   int rc;
 
-  rc = system("cd /mnt/tts_ram; mv speech.wav output.wav; aplay -q output.wav");
+  rc = system("cd /mnt/tts_ram; mv speech.wav output.wav; aplay -q output.wav 2>/dev/null");
   return NULL;
 }
 
@@ -298,6 +329,11 @@ void jhcFestTTS::Done ()
 {
   struct stat sb;
   int rc;
+
+  // skip if already cleaned up
+  if (ok <= 0)
+    return;
+  ok = 0;
 
   // stop current message, phoneme enumeration, and server
   shutdown();

@@ -5,7 +5,7 @@ Description=Buttons & Battery
 Type=simple
 Restart=always
 RestartSec=5
-ExecStart=/usr/bin/python3 /home/pi/Ganbei/mpi_buttons.py 
+ExecStart=/usr/bin/python3 /home/pi/Ganbei/scripts/mpi_buttons.py 
 ExecStop=/bin/systemctl kill mpi_buttons
 
 [Install]
