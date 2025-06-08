@@ -17,7 +17,8 @@ Start by assembling the MasterPi robot, which arrives in kit form. Next, downloa
 
 To run the robot, press the button on its back to start the application then speak to it in English. You can directly move the robot ("Drive forward"), ask it questions ("Do you see a red object?"), or teach it new things ("To snatch an object grab it"). This [__video__](https://youtu.be/qWLANb0PmbM) shows some simple reasoning, while this [__video__](https://youtu.be/EjzdjWy3SKM) demonstrates the utility of teaching (on an older robot).
 
-For a somewhat fancier version see [Wansui](https://github.com/jconnell11/Wansui).
+For a somewhat fancier version see [Wansui](https://github.com/jconnell11/Wansui).<br/>
+For an even cheaper (but less capable) version see [Baijiu](https://github.com/jconnell11/Baijiu).
 
 ---
 
