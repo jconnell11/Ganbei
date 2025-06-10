@@ -389,7 +389,7 @@ OP 23 - "To point at an object point to it"
 
 // --------------------------------------
 
-OP 24 - "To tell someone that an object is somewhere point at it, say here, then tuck the arm"
+OP 24 - "To tell someone that an object is somewhere point at it then say here"
   trig:
     DO[ fcn-1 -lex-   tell
               -fcn--> act-1
@@ -411,11 +411,6 @@ OP 24 - "To tell someone that an object is somewhere point at it, say here, then
               -fcn-> act-3
         act-3 -obj-> txt-1
         txt-1 -str-  here ]
-    DO[ fcn-4 -lex-  tuck
-              -fcn-> act-4
-        act-4 -obj-> obj-3
-        ako-3 -lex-  arm
-              -ako-> obj-3 ] 
 
 
 OP 25 - "If you dropped an object open the hand then announce it then shift up then relax the hand"
