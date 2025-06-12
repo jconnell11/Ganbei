@@ -2,7 +2,7 @@
 
 ## Simple Method 
 
-The easiest approach is just to copy a complete system image onto a new SD card (32/64GB microSDHX UHS-1). Note that this requires some disassembly of the Master Pi robot to get at the card slot. [Contact](mailto:jconnell@alum.mit.edu) me if you are interested in access to the image. 
+The easiest approach is just to copy a complete system image onto a new [SD card](https://www.amazon.com/dp/B08GY9NYRM) (32GB microSDHC UHS-1). Note that this requires some disassembly of the Master Pi robot to get at the card slot. [Contact](mailto:jconnell@alum.mit.edu) me if you are interested in access to the image. 
 
 ---
 

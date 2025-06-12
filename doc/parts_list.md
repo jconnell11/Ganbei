@@ -14,14 +14,14 @@
 | __pair__ of Samsung 35E 18650 batteries | [BatteryStore](https://www.18650batterystore.com/products/samsung-35e-button-top) | 20 |
 | 18650 battery fast charger | [Amazon](https://www.amazon.com/Battery-Charger-Display-Rechargeable-Batteries/dp/B0C778JN2Z) | 12 |
 | USB fast charge wall brick (need only 1) | [Amazon](https://www.amazon.com/Charger-Besgoods-Adapter-Compatible-Wireless/dp/B07XPW9JVQ) | 10 |
-| SanDisk 64GB Extreme microSDXC UHS-I Memory Card | [Amazon](https://www.amazon.com/dp/B09X7C7LL1) | 11 |
-|  | __TOTAL__ | __$ 476__ |
+| SanDisk 32GB Ultra microSDHC UHS-1 Memory Card | [Amazon](https://www.amazon.com/dp/B08GY9NYRM) | 8 |
+|  | __TOTAL__ | __$ 473__ |
 
 <p align="right"><i>prices as of 6/25</i></p>
 
 The replacement batteries and charger are optional, but increase the runtime of the robot by nearly a factor of 3!
 
-The SD card is also optional (and probably overkill) but provides an opportunity to save the original pre-loaded Hiwonder card.
+The SD card is also optional but provides an opportunity to save the original pre-loaded Hiwonder card.
 
 __Not listed__: 1/2" aluminum [angle stock](https://www.homedepot.com/p/Everbilt-1-2-in-x-3-ft-1-16-in-Thick-Aluminum-Angle-6442/332733650) for TOF bracket ($6).
 
