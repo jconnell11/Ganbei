@@ -14,17 +14,19 @@ When the robot is running you should be able to speak directly to it. Note, you 
 
 You can ask general questions, tell the robot to perform certain motions, ask it about visual objects, and teach new procedures. Some examples are given below:
 
-    what is your name
-    what am I
+    what is your name?
+    what am I?
     step forward
     turn left 30 degrees
     open the hand
     extend your arm
     lift the short red object
+    put it down
     put the tall object on the long object
-    where is the nearest object 
-    how many white objects are there
-    is the skinny object bigger than the blue object
+    move the smallest object to the left of the blue object
+    where is the nearest object? 
+    how many white objects are there?
+    is the skinny object bigger than the blue object?
     to cha-cha drive forward then drive backwards
     don't grab big things but instead say yuck
     before grabbing an object open the hand then close the hand
@@ -41,6 +43,7 @@ If the "demo" command is given a numeric argument it can display internal images
     3 = overhead view of surface and estimated pose
     4 = detected objects and coordinates of closest thing
     5 = object mask and inferred color for closest thing
+    6 = free surface areas and selected deposit location
 
 ## Remote Typing
 
@@ -48,4 +51,4 @@ If you start the robot using the front button, you can connect to it later using
 
 ---
 
-June 2025 - Jonathan Connell - jconnell@alum.mit.edu
+July 2025 - Jonathan Connell - jconnell@alum.mit.edu
