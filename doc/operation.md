@@ -31,6 +31,10 @@ You can ask general questions, tell the robot to perform certain motions, ask it
     don't grab big things but instead say yuck
     before grabbing an object open the hand then close the hand
     to dance spin around and also say la la la la la wee
+    keep looking left while wandering
+    are you wandering?
+    stop wandering
+    did you wander?
 
 ## "Demo" Command
 

@@ -12,7 +12,7 @@ Due to board mounting irregularities the IMU needs to be adjusted. Open a comman
 
 ## Arm Calibration
 
-There is also a utility to determine the midpoint and scaling of the arm servos, which can vary from one unit to another. Getting accurate values for these parameters is crucial for gaze control and grasping objects. From the Ganbei directory run the command below and follow its instructions. This will automatically write new values to the "~/MasterPi/Deviation.yaml" file and the "~/Ganbei/config/Herbie_servo.yaml" file (or whatever your robot's name is). 
+There is also a utility to determine the midpoint and scaling of the arm servos, which can vary from one unit to another. Getting accurate values for these parameters is crucial for gaze control and grasping objects. From the Ganbei directory run the command below and follow its instructions. This will automatically write new values to the "/home/pi/MasterPi/Deviation.yaml" file and the "/home/pi/Ganbei/config/Herbie_servo.yaml" file (or whatever your robot's name is). 
 
     python3 arm_calib.py
 
