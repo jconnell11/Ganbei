@@ -153,10 +153,10 @@ void jhcFaceApp::init_graphics ()
 {
   QRect scr = QGuiApplication::primaryScreen()->geometry();
   QPalette pal;
-  int wid = 800, ht = 600;
+  int dx, wid = 800, ht = 600;
 
   // load desired head size from file
-  load_size(wid, ht);
+  dx = load_size(wid, ht);
 
   // build centered black area for inserting robot face
   fbox = new QWidget(0, Qt::FramelessWindowHint);
@@ -167,7 +167,7 @@ void jhcFaceApp::init_graphics ()
   fbox->setAutoFillBackground(true);
   fbox->setCursor(Qt::BlankCursor);
   fbox->setFixedSize(wid, ht);      
-  fbox->move((scr.width() - wid) / 2, (scr.height() - ht) / 2);
+  fbox->move((scr.width() - wid) / 2 + dx, (scr.height() - ht) / 2);
 
   // create animated face component (stretch face to fit face box)
   // graphics not fully initialized until first call to main_loop()
@@ -217,16 +217,17 @@ void jhcFaceApp::coord_lips ()
 
 //= Get desired head size from YAML file based on machine name.
 // assumes "wid" and "ht" already set to appropriate defaults
+// returns amount of xshift for de-centering head
 
-void jhcFaceApp::load_size (int& wid, int& ht) const
+int jhcFaceApp::load_size (int& wid, int& ht) const
 {
   char txt[200], tag[80];
   FILE *in;
-  int n;
+  int n, xsh = 0;
 
   // sanity check
   if (base == NULL) 
-    return;
+    return xsh;
 
   // form full configuration file name and try opening
   gethostname(tag, 80);
@@ -235,7 +236,7 @@ void jhcFaceApp::load_size (int& wid, int& ht) const
   { 
     sprintf(txt, "%sconfig/hmore_face.yaml", base);
     if ((in = fopen(txt, "r")) == NULL)
-      return;
+      return xsh;
   }
 
   // look for proper size parameters
@@ -246,10 +247,13 @@ void jhcFaceApp::load_size (int& wid, int& ht) const
         wid = n;
       else if (strcmp(tag, "face_height") == 0)
         ht = n;
+      else if (strcmp(tag, "face_xshift") == 0)
+        xsh = n;
     } 
 
   // clean up
-  fclose(in);                
+  fclose(in);  
+  return xsh;              
 }
 
 

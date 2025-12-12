@@ -87,7 +87,7 @@ public:
   void coord_lips ();
 
   // configuration parameters
-  void load_size (int& wid, int& ht) const;
+  int load_size (int& wid, int& ht) const;
   void load_face ();
 
 };
