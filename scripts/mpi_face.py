@@ -39,7 +39,7 @@ lib.face_gaze.argtypes = [c_float, c_float, c_float]
 class MpiFace:
 
   # create and configure animated face and Text-to-Speech system
-  # "dir" is where to find subdirectory "config/mesh" with face geometry
+  # "dir" is where to find subdirs "config" and "mesh" with face geometry
   # returns 1 if successful, 0 or negative for problem
 
   def Start(self, dir):
