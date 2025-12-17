@@ -130,7 +130,11 @@ void jhcFaceApp::launch_qt ()
   char *n = name;
   int i = 1;
 
-  // create all Qt elements then signal main thread
+  // make sure required X11 variables are set (e.g. for services)
+  setenv("DISPLAY", ":0", 0);
+  setenv("XAUTHORITY", "/home/pi/.Xauthority", 0);
+
+  // create all Qt elements
   app = new QApplication(i, &n);   
   app->setApplicationName(name); 
   init_graphics();                     
