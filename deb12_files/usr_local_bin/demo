@@ -1,0 +1,5 @@
+#!/bin/bash
+
+cd /home/pi/Ganbei
+python Ganbei_vis.py $1
+

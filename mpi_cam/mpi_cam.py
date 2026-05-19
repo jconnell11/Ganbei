@@ -9,7 +9,7 @@
 #
 # =========================================================================
 #
-# Copyright 2025 Etaoin Systems
+# Copyright 2025-2026 Etaoin Systems
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -87,7 +87,7 @@ if __name__ == "__main__":
     print("Could not connect to color camera!")
     sys.exit(0)
   if show > 0:
-    cv2.namedWindow("Camera")
+    cv2.namedWindow("Camera", flags=cv2.WINDOW_GUI_NORMAL)
     cv2.moveWindow("Camera", 10, 10)
 
   # receive frames and display them

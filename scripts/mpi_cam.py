@@ -9,7 +9,7 @@
 #
 # =========================================================================
 #
-# Copyright 2025 Etaoin Systems
+# Copyright 2025-2026 Etaoin Systems
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -70,7 +70,7 @@ class MpiCam:
 
 # =========================================================================
 
-# simple test program
+# simple test program (use argument 0 for raw speed test)
 
 if __name__ == "__main__":       
 
@@ -87,7 +87,10 @@ if __name__ == "__main__":
     print("Could not connect to color camera!")
     sys.exit(0)
   if show > 0:
-    cv2.namedWindow("Camera")
+    cv2.namedWindow("Camera", flags=cv2.WINDOW_GUI_NORMAL)
+    cv2.resizeWindow("Camera", 640, 480)
+    cv2.moveWindow("Camera", 10, 10)
+    cv2.waitKey(500)
     cv2.moveWindow("Camera", 10, 10)
 
   # receive frames and display them
@@ -98,12 +101,15 @@ if __name__ == "__main__":
   ft = start
   try:
     while True:
+
+      # grab image
       img = rgb.Color(0)
       if img is None:
         time.sleep(0.001)
         continue
       i += 1
 
+      # update rate estimage
       now = time.time()
       ms = 1000 * (now - ft)
       ft = now
@@ -113,11 +119,12 @@ if __name__ == "__main__":
         print("%3.1f fps" % (30.0 / (now - t0)))
         t0 = now 
 
+      # display image
       if show > 0:
         cv2.imshow("Camera", img) 
         cv2.waitKey(1)                 # pump update message
   except KeyboardInterrupt:
-    print("")
+    print()
 
   # shutdown after error or Ctrl-C
   stop = time.time();

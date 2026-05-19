@@ -1,0 +1,12 @@
+[Unit]
+Description=User Buttons
+
+[Service]
+Type=simple
+User=pi
+Restart=always
+RestartSec=2
+ExecStart=/usr/bin/python /home/pi/Ganbei/scripts/mpi_buttons.py 
+
+[Install]
+WantedBy=multi-user.target

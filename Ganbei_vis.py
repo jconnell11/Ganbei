@@ -9,7 +9,7 @@
 #
 # =========================================================================
 #
-# Copyright 2025 Etaoin Systems
+# Copyright 2025-2026 Etaoin Systems
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,42 +25,51 @@
 # 
 # =========================================================================
 
-import time, os, socket, sys, signal, cv2
+import multiprocessing, termios
+import math, time, os, socket, sys, signal, cv2
 import numpy as np
 
-from scripts.alia_vis import AliaVis
-from scripts.azure_reco import AzureReco
-from scripts.mpi_spout import MpiSpout
+sys.path.append('/home/pi/Ganbei/scripts')
+from alia_vis import AliaVis
+from azure_reco import AzureReco
+from mpi_spout import MpiFace
+from mpi_hiwonder import MasterPi, PlaySFX, LowBatt       
 
-from scripts.mpi_shell import MpiShell
-from scripts.mpi_arm import MpiArm
-from scripts.mpi_imu import MpiImu
-from scripts.mpi_base import MpiBase
-from scripts.mpi_cam import MpiCam
-from scripts.tof_cam import TofCam
+from mpi_shell import MpiShell
+from mpi_arm import MpiArm
+from mpi_base import MpiBase
+from mpi_cam import MpiCam
+from tof_cam import TofCam
 
+
+# -------------------------------------------------------------------------
 
 # control MasterPi robot with ALIA reasoner and cameras
-# need to modify Raspbian to run pulseaudio for all users (incl. root)
-# use "sudo" for best camera frame rate (MpiCam uses "nice")
-# to show debugging images do: "sudo python3 Ganbei_vis.py 2"
+# to show debugging images do: "python Ganbei_vis.py 2"
 
 class GanbeiVis:
 
-  # set up components and main loop control
-  def __init__(self):
+  # initialize state (takes robot interface object as argument)
+  def __init__(self, mpi):
+    self.bot = mpi
 
-    # allow for graceful exit
+    # allow for graceful exit on ^C or ^Z
     signal.signal(signal.SIGINT, self.Quit)
     signal.signal(signal.SIGTERM, self.Quit)
+
+    # reinitialize sound system early on (slow to reboot)
+    os.system("pulseaudio --start > /dev/null 2>&1")
 
     # main loop timing (30Hz)
     self.tick = 0.0
     self.cycle = 1.0 / 30.0
     self.ok = -4
 
+    # get beeping threshold
+    self.v10 = LowBatt()
+
     # turn on body LEDs very early
-    self.body = MpiShell()
+    self.body = MpiShell(self.bot)
 
     # set up color camera and depth sensor
     self.rgb = MpiCam()
@@ -74,12 +83,11 @@ class GanbeiVis:
     # create reasoner and language components
     self.ai   = AliaVis()
     self.reco = AzureReco()
-    self.tts  = MpiSpout()
+    self.face = MpiFace()
 
-    # interface to hardware components
-    self.arm  = MpiArm()
-    self.base = MpiBase()
-    self.imu  = MpiImu()
+    # interface to hardware components (arm poses itself)
+    self.arm  = MpiArm(self.bot)
+    self.base = MpiBase(self.bot)
 
     # mouth LED state variables
     self.mth0 = -1
@@ -96,6 +104,12 @@ class GanbeiVis:
     self.loop = False
 
 
+  # debugging routine prints wifi signal strength (db > -70)
+
+  def Wifi(self):
+    os.system("echo -n 'wifi = ';iw wlan0 station dump | grep signal | awk '{print $2}'")
+
+
   # ----------------------------- MAIN LOOP ------------------------------- 
 
   # update sensors, reason a bit, then issue commands
@@ -104,15 +118,14 @@ class GanbeiVis:
   def Run(self):
     try:
       self.start()
-      while self.loop:
-#        self.issue()         
-        self.update()         
+      while self.loop: 
+        self.update()    
         if self.ai.Think() <= 0:
           break
         self.issue()
         self.pace()
     except:
-      print("\n\x1b[1;33m>>> Unexpected exit!\x1b[0m")     
+      print("\n\x1b[1;33m>>> Unexpected exit!\x1b[0m")   
     self.shutdown()
 
 
@@ -123,20 +136,20 @@ class GanbeiVis:
     if self.tick == 0.0:
       self.tick = now
     wait = self.tick - now
-    self.tick += self.cycle
-    if (wait < 0):
-      wait = 0
-    time.sleep(wait)         # always allow thread swap
+    if wait > 0:
+      time.sleep(wait)   
+    else:
+      self.tick = now                  # fallen behind! 
+    self.tick += self.cycle  
 
 
   # configure and start up all components
 
   def start(self):
     
-    # clear audio then clear failure flag
-    print('Ganbei_vis - Initializing ...')
-#    os.system("systemctl restart pulseaudio.service")   
-    os.system("pactl set-source-mute @DEFAULT_SOURCE@ 0 &")  
+    # enable microphone then set system failure flag
+    print('Ganbei_vis - Initializing ...') 
+    os.system("pactl set-source-mute @DEFAULT_SOURCE@ 0")  
     self.loop = False
 
     # whether to show debugging images 
@@ -145,15 +158,19 @@ class GanbeiVis:
       if sys.argv[1].isdigit():
         self.show = int(sys.argv[1])
       else:
-        print("\x1b[1;33m>>> Bad argument: show debugging images (0-10)\x1b[0m")
+        print("\x1b[1;33m>>> Bad argument: show debugging images (1-14)\x1b[0m")
 
     # start color camera (try power-cycling if balky)
     self.ok = -4
     if self.rgb.Start() <= 0:
-      print("\x1b[1;33m>>> Power cycling USB hub for color camera ...\x1b[0m")
-      os.system("sudo uhubctl -l2 -a0 > /dev/null") 
-      time.sleep(0.5)  
-      os.system("sudo uhubctl -l2 -a1 > /dev/null")
+      print("\x1b[1;33m>>> Power cycling USB hub for color camera ... \x1b[0m", end='', flush=True)
+      hub = 2 if self.v10 < 6.5 else 3     # Pi4 vs Pi5
+      os.system(f"sudo uhubctl -l{hub} -a0 > /dev/null")
+      time.sleep(1.0)  
+      os.system(f"sudo uhubctl -l{hub} -a1 > /dev/null")
+      time.sleep(3.0)                 
+      os.system("pulseaudio -k")           # make sure USB sound card found 
+      print()
       if self.rgb.Start() <= 0:
         print("\x1b[1;33m>>> Could not connect to color camera!\x1b[0m")
         return
@@ -166,24 +183,23 @@ class GanbeiVis:
 
     # start speech output
     self.ok = -2
-    if self.tts.Start() <= 0:
+    if self.face.Start("/home/pi/Ganbei") <= 0:
       print("\x1b[1;33m>>> No text-to-speech!\x1b[0m")
       return
 
-    # start reasoner
+    # start reasoner (make name list and set image sizes)
     self.ok = -1
-    self.ai.Body(1, 1, 0, 1, self.show)
-    if self.ai.Reset('Ganbei_vis') <= 0:   # makes name list
+    if self.ai.Reset('Ganbei_vis', self.show) <= 0:      
       print("\x1b[1;33m>>> Problem with ALIA!\x1b[0m")
       return
 
-    # start network speech recognition
+    # start network speech recognition (needs name list)
     self.ok = 0
-    if self.reco.Start() <= 0:             # needs name list
+    if self.reco.Start() <= 0:        
       print("\n\x1b[1;33m>>> No speech recognition!\x1b[0m")
-      os.system("aplay -q toot.wav")       # continue as text-only
+      PlaySFX("toot")                  # continue as text-only
 
-    # possibly add camera and debugging displays
+    # possibly add camera and debugging displays (needs image sizes)
     if self.show > 0:
       self.show_init()
 
@@ -192,7 +208,7 @@ class GanbeiVis:
     self.rt0 = self.t0
     self.ct0 = self.t0
     self.ok = 1
-    self.loop = True
+    self.loop = True                   # okay to run
 
 
   # create and display debugging image windows (after ALIA init)
@@ -202,7 +218,8 @@ class GanbeiVis:
     # object detection (color camera)
     self.cam = np.zeros((480, 640, 3), np.uint8)
     self.cam[:, :, 0] = 255                                # blue
-    cv2.namedWindow("Camera View")
+    cv2.namedWindow("Camera View", flags=cv2.WINDOW_GUI_NORMAL)
+    cv2.resizeWindow("Camera View", 640, 480)
     cv2.moveWindow("Camera View", 0, 0)
     cv2.imshow("Camera View", self.cam)
 
@@ -211,8 +228,10 @@ class GanbeiVis:
     mh = self.ai.MapH()
     self.map = np.zeros((mh, mw, 3), np.uint8)
     self.map[:, :, 1] = 128                                # green
-    cv2.namedWindow("Overhead Map")     
-    cv2.moveWindow("Overhead Map", 650, 0)                 # ignores!    
+    cv2.namedWindow("Overhead Map", flags=cv2.WINDOW_GUI_NORMAL)
+    cv2.resizeWindow("Overhead Map", mw, mh)     
+    cv2.setWindowTitle("Overhead Map", self.ai.MapT())
+    cv2.moveWindow("Overhead Map", 650, 0)                 # ignores!   
     cv2.imshow("Overhead Map", self.map)
 
     # connect images to ALIA
@@ -221,9 +240,11 @@ class GanbeiVis:
     self.ai.Vfmt.value = 2
     self.ai.Mfmt.value = 2
 
-    # needs >200ms for fill and initialization
+    # needs >200ms for fill and initialization 
+    # to regrab terminal needs: sudo apt install wmctrl
     cv2.waitKey(500);   
     cv2.moveWindow("Overhead Map", 650, 0)                 # works here
+    cv2.moveWindow("Camera View", 0, 0)
     title = os.getlogin() + "@" + socket.gethostname()
     os.system("wmctrl -a " + title)                        # reclaim keyboard
     
@@ -232,21 +253,23 @@ class GanbeiVis:
 
   def shutdown(self):
     end = time.time()
-    print("\nGanbei_vis - Shutting down ...")
+    print("\n\nGanbei_vis - Shutting down ...")
 
-    # stop reasoning and speech
+    # stop reasoning and robot motion
     if self.ok >= 0:
       self.ai.Done(1)
+    self.bot.Freeze()
+
+    # stop speech elements
     self.reco.Done()
-    self.tts.Done()
+    self.face.Done()
 
     # stop color camera and depth finder
     self.rgb.Done()
     self.tof.Done()
 
-    # stop robot components
-    self.base.Stop()
-    self.body.Done()                             # lights off last
+    # lights off last
+    self.body.Done()                      
    
     # get streaming stats
     if self.t0 > 0.0:
@@ -260,12 +283,12 @@ class GanbeiVis:
 
     # signal that something went wrong
     if self.ok <= 0:                          
-      os.system("aplay -q squawk.wav")  
+      PlaySFX("squawk")
     if self.ok == -3:
       print("\x1b[1;31m*** REBOOT TO FIX TOF SENSOR ***\x1b[0m")
       if self.show <= 0:
-        os.system("sudo reboot")                                            
-
+        os.system("sudo reboot")   
+                                        
 
   # transfer commands from ALIA reasoner to actuators
 
@@ -307,42 +330,14 @@ class GanbeiVis:
   # transfer any utterances to TTS system
 
   def tts_issue(self):
-    # set appropriate prosody for current mood
+    # set appropriate prosody (and possibly expression) for current mood
     # [ surprised angry scared happy : unhappy bored lonely tired ]
-    # feel: 0 bored, 1 happy, 2 sad, 3 angry, 4 scared, 5 excited
-    m = self.ai.Mood.value
-    feel = 5                           # neutral
-    very = 0
-    if m & 0x80 != 0:
-      very = 1                         # excited (surprised)
-    elif m & 0x40 != 0:
-      feel = 3                         # angry
-      if m & 0x4000 != 0:
-        very = 1
-    elif m & 0x20 != 0:
-      feel = 4                         # scared
-      if m & 0x2000 != 0:
-        very = 1
-    elif m & 0x10 != 0:
-      feel = 1                         # happy  
-      if m & 0x1000 != 0:
-        very = 1
-    elif m & 0x04 != 0:
-      feel = 0                         # bored
-      if m & 0x0400 != 0:
-        very = 1
-    elif m & 0x02 != 0: 
-      feel = 2                         # sad (lonely)
-      if m & 0x0200 != 0:
-        very = 1
-    elif m & 0x01 != 0:
-       feel = 0                        # tired
-    self.tts.Emotion(feel, very)
+    self.face.Mood(self.ai.Mood.value)
 
     # check for message to speak
     msg = self.ai.Spout()
     if msg != '':
-      self.tts.Say(msg)
+      self.face.Say(msg)
 
 
   # feed ALIA any speech recognition results
@@ -362,13 +357,13 @@ class GanbeiVis:
   def body_issue(self):
 
     # get talking status
-    mth = self.tts.Mouth()             # -1 or color (0 = black)
+    mth = self.face.Mouth()            # none = -1, on = 1, off = 0
     if mth < 0:
       self.ai.Talk.value = 0
     else:
       self.ai.Talk.value = 1 
     if mth > 0:
-      mth = 0xFFFFFF                   # override requested color
+      mth = 0xFFFFFF                   # convert to RGB value for LEDs 
      
     # microphone muting
     if mth != self.mth0:
@@ -378,9 +373,11 @@ class GanbeiVis:
         os.system("pactl set-source-mute @DEFAULT_SOURCE@ 0 &")   
       self.mth0 = mth
 
-    # set mouth color (talk flashing > listening glow)
+    # set LED mouth color (listening glow < talk flashing)
+    attn = self.ai.Attn.value
+    self.face.Stare(attn)              # screen face eye color
     col = mth
-    if col < 0 and self.ai.Attn.value > 1:  
+    if col < 0 and attn > 1:  
       col = 0x80FF00                   # listening = green
     if col != self.col0:                   
       self.body.Talk(col)  
@@ -417,7 +414,9 @@ class GanbeiVis:
   def body_update(self):
 
     # piece-wise linear approximation to capacity
-    v100, v20, v0 = 7.6, 6.4, 5.8      
+    v100 = 7.6
+    v20  = self.v10 + 0.1                         
+    v0   = v20 - 0.6  
     v = self.body.Battery()
     if v >= v100:
       pct = 100.0
@@ -428,11 +427,6 @@ class GanbeiVis:
     else:
       pct = 0.0
     self.ai.Batt.value = pct
-
-    # get overall body attitude (degs)
-    self.imu.Update();
-    self.ai.Tilt.value = self.imu.Incline()
-    self.ai.Roll.value = self.imu.Roll()
 
   
   # -------------------------------- NECK ---------------------------------
@@ -458,6 +452,7 @@ class GanbeiVis:
         tilt = t0                      # no motion default
       sp = max(self.ai.Cpv.value, self.ai.Ctv.value)
       self.arm.Gaze(pan, tilt, self.sf * sp)
+      self.face.Gaze(pan, tilt, self.sf * sp * 120.0)      # needs dps
 
     # range-finder angles 
     elif rbid >= gbid:
@@ -470,16 +465,27 @@ class GanbeiVis:
         tilt = t0                      # no motion default
       sp = max(self.ai.Rpv.value, self.ai.Rtv.value)
       self.arm.Gaze(pan, tilt, self.sf * sp)
+      self.face.Gaze(pan, tilt, self.sf * sp * 120.0)      # needs dps
 
-    # range-finder view location 
-    else:
+    # range-finder view location (xyz)
+    else:                              # bid guaranteed non-zero
       x = self.ai.Rxt.value
       y = self.ai.Ryt.value
       z = self.ai.Rzt.value
-      self.arm.LookAt(x, y, z, 0, self.sf * self.ai.Rgv.value)
+      sp = self.ai.Rgv.value
+      self.arm.LookAt(x, y, z, 2, self.sf * sp)            # avg tof + rgb
 
+      # approx pan and tilt from screen face center (+20 deg tilt?)
+      dy = y - 3.5
+      dz = z - 2.5
+      r = math.sqrt(x * x + dy * dy)
+      pan  = math.degrees(math.atan2(-x, dy))
+      tilt = math.degrees(math.atan2(dz,  r))
+      self.face.Gaze(pan, tilt, self.sf * sp * 120.0)      # needs dps
+     
     # ALWAYS interpret gripper command then set all arm joints 
-    self.arm.Grip(self.ai.Awt.value, self.sf * self.ai.Awv.value)
+    sp = self.ai.Awv.value if self.ai.Awi.value > 0 else 0.0
+    self.arm.Grip(self.ai.Awt.value, self.sf * sp)
     self.arm.Issue()
 
 
@@ -504,7 +510,8 @@ class GanbeiVis:
   def arm_issue(self):
 
     # return arm to tucked travel position
-    if self.ai.Aji.value > max(self.ai.Api.value, self.ai.Adi.value):
+    mbid = max(self.ai.Api.value, self.ai.Adi.value)
+    if self.ai.Aji.value > mbid:
       b, s, e, w = self.arm.Home()
       b0, _, _, _ = self.arm.Angles()
       if self.arm.ErrAng(b0, s, e, w) > 2:       # swivel last
@@ -521,13 +528,14 @@ class GanbeiVis:
       if self.ai.Adv.value == 0:
         _,t,_ = self.arm.Orientation()   # no motion default
         tex = 0
-      sp = max(self.ai.Apv.value, self.ai.Adv.value)
+      sp = max(self.ai.Apv.value, self.ai.Adv.value) if mbid > 0 else 0.0
 #      if self.ai.Apm.value != 0 or self.ai.Adm.value & 0x07 != 0:
 #        sp = -abs(sp)                    # linear trajectory 
       self.arm.Move(x, y, z, t, tex, self.sf * sp)
 
     # ALWAYS interpret gripper command then set all arm joints 
-    self.arm.Grip(self.ai.Awt.value, self.sf * self.ai.Awv.value)
+    sp = self.ai.Awv.value if self.ai.Awi.value > 0 else 0.0
+    self.arm.Grip(self.ai.Awt.value, self.sf * sp)
     self.arm.Issue()
 
 
@@ -563,7 +571,6 @@ class GanbeiVis:
   # get odometry estimate from wheels and updated body orientation
 
   def base_update(self):
-    self.base.Compass(self.imu.Heading())        # imu.Update already called
     self.base.Update()
     self.ai.Bt.value, self.ai.Bw.value, self.ai.Bx.value, self.ai.By.value = self.base.Odom()
 
@@ -598,11 +605,11 @@ class GanbeiVis:
       if self.ok <= 0:     
         self.loop = False
       else:                                      # attempt recovery   
-        print("\n\x1b[1;33m>>> Color camera restarting!\x1b[0m")
+        print("\n\x1b[1;33m>>> Color camera restarting ...\x1b[0m")
         self.ok = 0
         self.rgb.Done()
         if self.rgb.Start() > 0:
-          self.ct0 = time.time
+          self.ct0 = time.time()
         else:
           print("\x1b[1;33m>>> Color camera stopped working!\x1b[0m")
           self.loop = False
@@ -614,7 +621,7 @@ class GanbeiVis:
       self.ai.Rfmt.value = 3   
       self.rt0 = now                             # reset timeout
       self.rcnt += 1   
-    elif (now - self.rt0) > 0.5:             
+    elif self.ok > 0 and (now - self.rt0) > 0.5:             
       print("\n\x1b[1;33m>>> TOF sensor stopped working!\x1b[0m")
       self.ok = 0
       self.loop = False
@@ -623,8 +630,36 @@ class GanbeiVis:
 # =========================================================================
 
 # initialize robot and start reacting to speech and sensors
+# "bot" must be made here so only one process owns serial port
+
+def main():
+  bot = MasterPi()    
+  g = GanbeiVis(bot)
+  g.Run()
+
+
+# actual Python entry point
 
 if __name__ == "__main__":
-  g = GanbeiVis()
-  g.Run()
- 
+
+  # run main program in a separate process
+  proc = multiprocessing.Process(target=main)
+  proc.start()
+  proc.join()
+
+  # catch segmentation faults (SIGSEGV)
+  rc = proc.exitcode
+  proc.close()
+  if rc != 0:
+
+    # complain
+    print("\n\x1b[1;31m>>> CRASHED!\x1b[0m")
+    PlaySFX("squawk")
+   
+    # restore console echo
+    fd = sys.stdin.fileno()
+    att = termios.tcgetattr(fd);
+    att[3] |= termios.ICANON | termios.ECHO
+    termios.tcsetattr(fd, termios.TCSANOW, att)
+
+

@@ -9,7 +9,7 @@
 #
 # =========================================================================
 #
-# Copyright 2023-2025 Etaoin Systems
+# Copyright 2023-2026 Etaoin Systems
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,24 +25,26 @@
 # 
 # =========================================================================
 
+import time                            # for testing
+
 from threading import Thread, Event, Lock
-import time, sys
 
-sys.path.append('/home/pi/MasterPi/HiwonderSDK')
-import Board, Sonar
+from mpi_hiwonder import MasterPi, PlaySFX, LowBatt        
 
+
+# -------------------------------------------------------------------------
 
 # interface to MasterPi robot miscellaneous components
 # background thread ramps lights up and down
 
 class MpiShell(Thread):
 
-  # create components
-  def __init__(self):
+  # initialize state (takes robot interface object as argument)
+  def __init__(self, mpi):
     super(MpiShell, self).__init__()
     self.halt = Event()
     self.lock = Lock()
-    self.sn = Sonar.Sonar()
+    self.bot = mpi           # for voltage
 
     # respiration and cycle rates
     self.bpm = 16.0
@@ -70,9 +72,13 @@ class MpiShell(Thread):
     self.force = -1
 
     # battery monitoring
-    self.vest = 8.0
+    self.vest = 0.0
     self.vchk = 60
-    self.vini = 0
+    self.vhys = 0
+    self.nag  = 0
+
+    # set beeping threshold
+    self.v10 = LowBatt()
 
     # start background thread
     self.start()
@@ -120,9 +126,8 @@ class MpiShell(Thread):
         return
     v = self.brite * (self.mth1 - self.mth0) + self.mth0
     col = self.gamma(v * self.rmth, v * self.gmth, v * self.bmth)
-    self.sn.setPixelColor(0, col)
-    self.sn.setPixelColor(1, col)
-    self.sn.show()
+    self.bot.Eyes(col)
+    self.bot.Body(col)
 
 
   # get an R:G:B color value with approximate gamma correction
@@ -140,21 +145,43 @@ class MpiShell(Thread):
 
 
   # get a smoothed estimate of battery voltage
-  # essentially duplicated from mpi_buttons
+  # essentially duplicated from mpi_buttons.py
 
   def voltage(self):
+
+    # if blip started turn off buzzer after several cycles
+    if self.nag > 0:
+      self.nag -= 1
+      if self.nag == 0:
+        self.bot.Beep(0, 1)            # for 2023 expansion board
+
+    # read voltage once every 2 seconds (60 cycles at 30 Hz)
     self.vchk += 1
-    if self.vchk < 60:                 # 2 sec
+    if self.vchk < 60:                
       return
+
+    # make sure sample not crazy (often!)
     self.vchk = 0
-    v = Board.getBattery() / 1000.0
-    if v > 5.0 and v < 8.5:            # skip crazy
-      with self.lock:
-        if self.vini <= 0:
-          self.vest = v                # copy first
-          self.vini = 1
+    v = self.bot.Voltage() 
+    with self.lock:
+  
+      # if sample not crazy (often!) add to IIR filter 
+      if v >= 5.0 and v <= 8.5:
+        if self.vest <= 0.0:
+          self.vest = v                # quick start
         else:
           self.vest += 0.2 * (v - self.vest)
+      elif self.vest <= 0:
+        return
+
+      # if less than 10% left start beep                           
+      if self.vest > self.v10 + 0.2:                   
+        self.vhys = 0
+      elif self.vhys > 0 or self.vest < self.v10:  
+        self.vhys = 1   
+        PlaySFX("beep2", 0, 1)
+        self.bot.Beep(1, 1)            # backup beep (200 ms)
+        self.nag = 4                    
 
 
   # -----------------------------------------------------------------------
@@ -184,7 +211,7 @@ class MpiShell(Thread):
   # immediately set LEDs to white (e.g. for surprise)
 
   def Flash(self, doit):
-    col = 0xFAFF80         # special - not used externally
+    col = 0xFAFF80           # special - not used externally
     if doit > 0:
       self.Talk(col)
     else:
@@ -202,10 +229,9 @@ class MpiShell(Thread):
         return
       if col == self.force:
         return
-      self.force = col   
-      self.sn.setPixelColor(0, col)
-      self.sn.setPixelColor(1, col)
-      self.sn.show()    
+      self.force = col  
+      self.bot.Eyes(col)
+      self.bot.Body(col) 
 
 
   # report current battery voltage
@@ -213,16 +239,9 @@ class MpiShell(Thread):
 
   def Battery(self):
     with self.lock:
-      v = self.vest
-    return v
-
-
-  # make a short beep (blocks!)
-
-  def Beep(self):
-    Board.setBuzzer(1)
-    time.sleep(0.1)                   
-    Board.setBuzzer(0)
+      if self.vest <= 0.0:
+        return 8.0           # assume fully charged
+      return self.vest
 
 
   # signal loop to cleanly terminate then wait for it
@@ -237,7 +256,8 @@ class MpiShell(Thread):
 # simple test runs breathing cycle
 
 if __name__ == "__main__":
-  b = MpiShell();
+  bot = MasterPi()
+  b = MpiShell(bot)
 
   # speech sequence
 #  b.Talk(0)
@@ -306,7 +326,7 @@ if __name__ == "__main__":
   print("resume breathing")
   time.sleep(3)
 
-  print("switch to magenta breathing");
+  print("switch to magenta breathing")
   b.Breath(0xFF00FF)         
   time.sleep(5)
 

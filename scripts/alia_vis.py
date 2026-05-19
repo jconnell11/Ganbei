@@ -30,6 +30,7 @@ from ctypes import CDLL, c_char_p, c_void_p, c_int, c_float
       
 lib = CDLL('lib/libalia_vis.so')  
 lib.alia_spout.restype = c_char_p
+lib.alia_tmap.restype = c_char_p
 
 
 # Python wrapper for ALIA linguistic reasoning system with vision
@@ -175,21 +176,16 @@ class AliaVis:
 
   # -------------------------------------------------------------------------
 
-  # specify which hardware susbsystems are present and working
-
-  def Body(self, neck, arm, lift, base, show =0):
-    lib.alia_body(neck, arm, lift, base, show)
-
-
   # configure reasoning system and load knowledge base
   # app_name: name of program to print on console at beginning
+  # show: produce debugging image (0 = none, 1 = overhead map, 2-17 = various) 
   # makes file "config/all_names.txt" for speech recognition
   # returns 1 if okay, 0 or negative for problem
 
-  def Reset(self, app_name):
+  def Reset(self, app_name, show =0):
     dir = '/home/pi/Ganbei'
     rname = socket.gethostname() + ' Ganbei'
-    return lib.alia_reset(dir.encode(), rname.encode(), app_name.encode())
+    return lib.alia_reset(dir.encode(), rname.encode(), app_name.encode(), show)
 
 
   # exchange command and sensor data then start reasoning a bit  
@@ -220,6 +216,7 @@ class AliaVis:
   def Spin(self, reco, ms):
     lib.alia_spin(c_char_p(reco.encode()), ms)
 
+
   # -------------------------------------------------------------------------
 
   # get width of alternate debugging "map" image (only valid after reset)
@@ -228,10 +225,16 @@ class AliaVis:
     return lib.alia_wmap()
                 
 
-  # get height of alternate debugging "map" image (only valid after reset).
+  # get height of alternate debugging "map" image (only valid after reset)
 
   def MapH(self): 
     return lib.alia_hmap()
+
+
+  # get title of alternate debugging "map" image (only valid after reset)
+
+  def MapT(self):
+    return lib.alia_tmap().decode()
 
 
 # =========================================================================

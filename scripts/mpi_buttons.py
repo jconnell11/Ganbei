@@ -3,13 +3,13 @@
 
 # =========================================================================
 #
-# mpi_buttons.py : monitors expansion board buttons and checks battery
+# mpi_buttons.py : monitors expansion board buttons (only)
 #
 # Written by Jonathan H. Connell, jconnell@alum.mit.edu
 #
 # =========================================================================
 #
-# Copyright 2023-2025 Etaoin Systems
+# Copyright 2023-2026 Etaoin Systems
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,153 +25,125 @@
 # 
 # =========================================================================
 
-import os, sys, time
-import RPi.GPIO as GPIO
+import os, time, gpiod       
 
-sys.path.append('/home/pi/MasterPi/HiwonderSDK')
-import Board
+from mpi_hiwonder import PlaySFX
 
 
-# ----------------------------------------------------------------------- 
+# monitors expansion board buttons (only)
 
-# clear voltage estimate and beeping state
-voltage = 8.0
-volt_cnt = 40
-volt_nag = 0
-volt_hys = 0
+class MpiButtons:
 
-
-# check average battery voltage and beep if low
-# no easy way to share this with main application
-
-def check_battery():
-  global voltage, volt_cnt, volt_nag, volt_hys
-
-  # if blip started turn off buzzer after several cycles
-  if volt_nag > 0:
-    volt_nag -= 1
-    if volt_nag == 0:
-      Board.setBuzzer(0)
-
-  # read voltage once every 2 seconds (40 cycles at 20 Hz)
-  volt_cnt += 1
-  if volt_cnt < 40:
-    return
-  volt_cnt = 0 
-    
-  # if sample not crazy (often!) add to IIR filter 
-  v = Board.getBattery() / 1000.0
-  if v > 5.0 and v < 8.5:
-    voltage += 0.2 * (v - voltage)
-
-  # if too low then start beep 
-  if voltage > 6.4:                    
-    volt_hys = 0
-  elif volt_hys > 0 or voltage < 6.2:  # roughly 10% left
-    volt_hys = 1          
-    Board.setBuzzer(1)
-    volt_nag = 4                       # medium beep (200ms)
+  # initialize state
+  def __init__(self):
+    self.cfg_input()
+    self.front_cnt = 0
+    self.back_cnt = 0
 
 
-# ----------------------------------------------------------------------- 
-
-# configure button inputs (default to BCM mode pin numbers)
-
-GPIO.setwarnings(False)
-key1_pin = 13
-key2_pin = 23
-mode = GPIO.getmode()
-if mode == None or mode < 0:
-  GPIO.setmode(GPIO.BCM)              # preferred
-elif mode == GPIO.BOARD:
-  key1_pin = 33                 
-  key2_pin = 16
-GPIO.setup(key1_pin, GPIO.IN, pull_up_down = GPIO.PUD_UP)
-GPIO.setup(key2_pin, GPIO.IN, pull_up_down = GPIO.PUD_UP)
+  # clean up on exit (release GPIO)
+  def __del__(self):
+    self.f_but.release()
+    self.b_but.release()
+    self.chip.close()
 
 
-# clear key timing state
-key1_cnt = 0
-key2_cnt = 0
+  # configure button inputs
+
+  def cfg_input(self):
+
+    # link to proper GPIO chip
+    try:
+      self.chip = gpiod.Chip('gpiochip4')        # Raspberry Pi 5
+    except:
+      self.chip = gpiod.Chip('gpiochip0')        # Raspberry Pi 4B
+
+    # get pin interfaces
+    front_pin = 13                               # key1 
+    back_pin  = 23                               # key2 (broken?)
+    self.f_but = self.chip.get_line(front_pin)
+    self.b_but = self.chip.get_line(back_pin)
+
+    # both need pullups for switches 
+    input  = gpiod.LINE_REQ_DIR_IN
+    pullup = gpiod.LINE_REQ_FLAG_BIAS_PULL_UP
+    self.f_but.request(consumer="key1", type=input, flags=pullup)
+    self.b_but.request(consumer="key2", type=input, flags=pullup)
 
 
-# check state of buttons on expansion board
-# front brief = start demo, front 3 sec = <nothing>
-#  back brief = stop demo,   back 3 sec = shutdown
+  # ----------------------------------------------------------------------- 
 
-def check_keys():
-  global key1_pin, key2_pin, key1_cnt, key2_cnt
+  # check state of buttons on expansion board
+  #   front: brief = start demo, 3 sec = shutdown
+  #    back: brief = stop demo,  3 sec = reboot
 
-  # check if key1 currently being pressed
-  if GPIO.input(key1_pin) == GPIO.LOW:
-    key1_cnt += 1
-    key2_cnt = 0
-    if key1_cnt == 60:
-      print('system reboot')
-      Board.setBuzzer(1)
-      time.sleep(0.4)                  # long beep
-      Board.setBuzzer(0)
-      stop_demo()
-      os.system('reboot')
-      key1_cnt = -90                   # repeat at 5 sec
-    return    
+  def check_keys(self):
+
+    # check if front button currently being pressed
+    if self.f_but.get_value() == 0:
+      time.sleep(0.05)                   # noise reject
+      if self.f_but.get_value() == 0:
+        self.front_cnt += 1
+        self.back_cnt = 0
+        if self.front_cnt == 30:         # 30 * 2 * 0.05 = 3 sec
+          print('system shutdown')
+          PlaySFX("beep4")               
+          self.stop_demo()                      
+          os.system('sudo shutdown -h now')    # ==> SHUTDOWN 
+          self.front_cnt = -20                 # repeat at 5 sec
+        return    
   
-  # key1 not currently pressed
-  if key1_cnt > 0:
-    print('start new demo')
-    Board.setBuzzer(1)
-    time.sleep(0.1)                    # short beep
-    Board.setBuzzer(0)
-    time.sleep(0.1)
-    Board.setBuzzer(1)
-    time.sleep(0.1)                    # short beep
-    Board.setBuzzer(0)
-  #  stop_demo()
-    start_demo()
-  key1_cnt = 0 
+    # front button no longer pressed
+    if self.front_cnt > 0:
+      print('start new demo')
+      PlaySFX("beep_beep")                         
+      self.stop_demo()                        
+      self.start_demo()                  # ==> START DEMO
+    self.front_cnt = 0 
 
-  # check if key2 currently being pressed
-  if GPIO.input(key2_pin) == GPIO.LOW:
-    key2_cnt += 1
-    if key2_cnt == 60:
-      print('system shutdown')
-      Board.setBuzzer(1)
-      time.sleep(0.4)                  # long beep
-      Board.setBuzzer(0)
-      stop_demo()
-      os.system('shutdown -h now')
-      key2_cnt = -90                   # repeat at 5 sec
-    return    
+    # check if back button currently being pressed
+    if self.b_but.get_value() == 0:
+      time.sleep(0.05)                   # noise reject
+      if self.b_but.get_value() == 0:
+        self.back_cnt += 1
+        if self.back_cnt == 30:          # 30 * 2 * 0.05 = 3 sec
+          print('system reboot')
+          PlaySFX("beep4_beep")         
+          self.stop_demo()                      
+          os.system('sudo reboot')       # ==> REBOOT 
+          self.back_cnt = -20            # repeat at 5 sec
+        return    
   
-  # key2 not currently pressed
-  if key2_cnt > 0:
-    print('stop any demo')
-    Board.setBuzzer(1)
-    time.sleep(0.1)                    # short beep
-    Board.setBuzzer(0)
-    stop_demo()
-  key2_cnt = 0 
+    # back button no longer pressed
+    if self.back_cnt > 0:
+      print('stop any demo')
+      PlaySFX("beep")                    
+      self.stop_demo()                   # ==> STOP DEMO
+    self.back_cnt = 0 
 
 
-# launch current demo (whatever it is)
-# connect to program: sudo screen -dr
+  # ----------------------------------------------------------------------- 
 
-def start_demo():      
-  os.system("cd /home/pi/Ganbei;screen -dm python3 Ganbei_vis.py")
+  # launch current demo (whatever it is)
+  # connect to program: screen -dr
+
+  def start_demo(self):      
+    os.system("screen -dm bash -c demo")
 
 
-# make sure demo program has stopped cleanly
+  # make sure demo program has stopped cleanly
 
-def stop_demo():
-  os.system("pkill -2 -f Ganbei_vis.py")
+  def stop_demo(self):
+    os.system("pkill -INT -f Ganbei_vis.py")
 
 
 # =========================================================================
 
-# check buttons and voltage at 20 Hz
+# repeatedly check buttons at 20 Hz (even when Ganbei is running)
 
 if __name__ == "__main__":
+  m = MpiButtons()
   while True:
-    check_battery()
-    check_keys()
+    m.check_keys()
     time.sleep(0.05)
+   

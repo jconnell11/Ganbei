@@ -1,10 +1,10 @@
-// spout_spout.cpp : speech output with flashing lights for MasterPi robot
+// mpi_spout.cpp : speech output for MasterPi robot
 //
 // Written by Jonathan H. Connell, jconnell@alum.mit.edu
 //
 ///////////////////////////////////////////////////////////////////////////
 //
-// Copyright 2023-2025 Etaoin Systems
+// Copyright 2025 Etaoin Systems
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,16 +20,49 @@
 // 
 ///////////////////////////////////////////////////////////////////////////
 
-#include <jhcMpiSpout.h>
+#include <time.h>
+#include <pthread.h>
+
+#include <jhcFestTTS.h>
 
 
 ///////////////////////////////////////////////////////////////////////////
 //                          Global Variables                             //
 ///////////////////////////////////////////////////////////////////////////
 
-//= Text-to-speech audio player and LED display driver.
+//= Text-to-speech audio player.
 
-static jhcMpiSpout spout;
+static jhcFestTTS tts;
+
+
+//= Background TTS sequencing thread.
+  
+static pthread_t seq;
+
+
+//= Whether background thread is currently active.
+
+static int running = 0;
+
+
+///////////////////////////////////////////////////////////////////////////
+//                           Background Loop                             //
+///////////////////////////////////////////////////////////////////////////
+
+//= Play TTS audio file once it is ready.
+
+static void *shovel (void *inst)
+{
+  timespec ts = {0, 50 * 1000000};     // 20 Hz
+
+  while (tts.Active())                 // set false by tts.Done()
+  {
+    if (tts.Poised() > 0)              // TTS files have just become available
+      tts.Emit();                               
+    nanosleep(&ts, NULL); 
+  } 
+  return NULL;
+}
 
 
 ///////////////////////////////////////////////////////////////////////////
@@ -37,47 +70,82 @@ static jhcMpiSpout spout;
 ///////////////////////////////////////////////////////////////////////////
 
 //= Create and configure Text-to-Speech system.
-// if sh > 0 then shifts frequency more or less than 100%
+// "dir" is where to find subdirectory "config" with voice parameters
 // returns 1 if successful, 0 or negative for problem
 
-extern "C" int spout_start (int sh =0)
+extern "C" int face_start (const char *dir =NULL)
 {
-  return spout.Start(sh);
+  // try starting Festival
+  if (tts.Start(dir) <= 0)
+    return 0;
+  if (running > 0)
+    return 1;
+
+  // set up background thread to call tts.Emit() when ready
+  pthread_create(&seq, NULL, shovel, NULL); 
+  running = 1;
+  return 1;
 }
 
 
+//= Set prosody for next utterance based on mood bits.
+// [ surprised angry scared happy : unhappy bored lonely tired ]
+// high-order bytes contain "very" bits for corresponding conditions
 
-//= Set prosody for next utterance based on current emotion.
-// feel: 0 bored, 1 happy, 2 surprised, 3 unhappy, 4 scared, 5 angry, 6 excited
-// use spout_emo(6, 0) for default neutral tone
-
-extern "C" void spout_emo (int feel =6, int very =0)
+extern "C" void face_mood (int bits =0x0000)
 {
-  spout.Emotion(feel, very);
+  tts.Mood(bits);
 }
-  
-
+ 
 
 //= Convert text to audio and start playing (does not block).
 
-extern "C" void spout_say (const char *txt)
+extern "C" void face_say (const char *msg)
 {
-  spout.Say(txt);
+  tts.Prep(msg);
 }
   
 
-//= Determine raw color code for sonar LEDs at the current time.
-// returns pre-corrected 0xRRGGBB value, negative if not talking
+//= Turn eyes to the "paying attention" color (1) or normal (0).
+// Note: dummy function for compatibility with mpi_face.so
 
-extern "C" int spout_mouth ()
+extern "C" void face_stare (int doit =1)
 {
-  return spout.Mouth();
+}
+
+
+//= Progressively angle the head in some direction at some speed.
+// Note: dummy function for compatibility with mpi_face.so
+
+extern "C" void face_gaze (float pan =0.0, float tilt =0.0, float dps =0.0)
+{
+}
+
+
+//= Report TTS status for "sock puppet" mouth animation.
+// returns: -1 = silent, 0 = mouth closed, 1 = mouth open
+
+extern "C" int face_mouth ()
+{
+  return tts.Mouth();
 }
 
 
 //= Cleanly shut down system.
 
-extern "C" void spout_done ()
+extern "C" void face_done ()
 {
-  spout.Done();
+  timespec ts;
+
+  // cleanly shut down Festival
+  tts.Done();
+  if (running <= 0)
+    return;
+
+  // shut down background thread
+  clock_gettime(CLOCK_REALTIME, &ts); 
+  ts.tv_sec += 1;
+  pthread_timedjoin_np(seq, 0, &ts);
+  pthread_detach(seq);
+  running = 0;
 }

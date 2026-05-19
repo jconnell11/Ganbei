@@ -1,5 +1,10 @@
-g_sc: 13.65
-w_sc: 11.46
-e_sc: 11.53
-s_sc: 10.96
-b_sc: 10.53
+bsc: 11.31
+ssc: 10.98
+esc: 11.74
+wsc: 11.96
+gsc: 12.68
+boff: -28
+soff: -70
+eoff: 121
+woff: 34
+goff: 123

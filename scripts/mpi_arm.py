@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python3
 # encoding: utf-8
 
@@ -10,7 +9,7 @@
 #
 # =========================================================================
 #
-# Copyright 2024-2025 Etaoin Systems
+# Copyright 2024-2026 Etaoin Systems
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,11 +25,9 @@
 # 
 # =========================================================================
 
-import time, math, yaml, sys, socket
+import math, time
 
-sys.path.append('/home/pi/MasterPi/HiwonderSDK')
-import Board
-import yaml_handle
+from mpi_hiwonder import MasterPi      # for testing 
 
 
 # -------------------------------------------------------------------------
@@ -38,30 +35,31 @@ import yaml_handle
 # sine of angle in degrees
 
 def sind(ang):
-  return math.sin(ang * math.pi / 180)
+  return math.sin(math.radians(ang))
 
 
 # cosine of angle in degrees
 
 def cosd(ang):
-  return math.cos(ang * math.pi / 180)
+  return math.cos(math.radians(ang))
 
 
 # arcsine in degrees of given value 
 
 def asind(val):
-  return 180 * math.asin(val) / math.pi
+  return math.degrees(math.asin(val))
 
 
 # arccosine in degrees of given value 
 
 def acosd(val):
-  return 180 * math.acos(val) / math.pi
+  return math.degrees(math.acos(val))
 
 
 # arctangent in degrees of given offsets
+
 def atan2d(y, x):
-  return 180 * math.atan2(y, x) / math.pi
+  return math.degrees(math.atan2(y, x))
 
 
 # find hypotenuse and base angle for a point in rectangular coords
@@ -84,7 +82,7 @@ def sine_law(a, b_int, b):
   return asind(a * sind(b_int) / b)
 
 
-# =========================================================================
+# -------------------------------------------------------------------------
 
 # interface to MasterPi robot 4 DOF arm and gripper
 # geometry is particularly simple and has a closed-form solution
@@ -105,8 +103,10 @@ def sine_law(a, b_int, b):
 
 class MpiArm:
 
-  # set parameters and initialize state
-  def __init__(self):
+  # initialize state (takes robot interface object as argument)
+  def __init__(self, mpi):
+    self.bot = mpi
+    self.bot.LoadCal()                 # servo calibration data
 
     # hand geometry
     self.fout =  1.57                  # wrist to finger pivot (40mm) 
@@ -141,9 +141,12 @@ class MpiArm:
     self.ips  = 12.0                   # 36 max (approx)
     self.lead = 3.0                    # smoother servo response
 
-    # calibration data
-    self.load_cal()
-    self.load_dev()
+    # compute angle limits for joints
+    self.b0, self.b1 = self.bot.Limits(6)   
+    self.s0, self.s1 = self.bot.Limits(5, self.smid) 
+    self.e0, self.e1 = self.bot.Limits(4, self.emid) 
+    self.w0, self.w1 = self.bot.Limits(3, self.wmid) 
+    self.w0 = -120.0;
 
     # set starting pose/position                        
     g = 1.0                            # needs non-zero
@@ -154,63 +157,31 @@ class MpiArm:
     # initialize state variables
     self.gt, self.gc, self.g2 = g, g, g
     self.oz, self.fs = 0.0, 0.0
-    self.bt, self.st, self.et, self.wt = b, s, e, w        # final target angs
-    self.bc, self.sc, self.ec, self.wc = b, s, e, w        # current angs
-    self.b2, self.s2, self.e2, self.w2 = b, s, e, w        # next servo angs
+    self.bt, self.st, self.et, self.wt = b, s, e, w    # final target angs
+    self.bc, self.sc, self.ec, self.wc = b, s, e, w    # current angs
+    self.b2, self.s2, self.e2, self.w2 = b, s, e, w    # next servo angs
     self.xt, self.yt, self.zt, self.tt = x, y, z, t
     self.xc, self.yc, self.zc, self.tc = x, y, z, t
-    self.sp, self.firm, self.mode = 0.0, 0, -1             # special init mode
+    self.sp, self.firm, self.mode = 0.0, 0, -1         # special init mode
 
     # send command to servos but don't wait for completion
     self.Rate(30)
     self.init_servos(b, s, e, w, g)                
 
 
-  # load "config/robot_calib.yaml" file to adjust imagers and servos
-
-  def load_cal(self):
-
-    # read proper file 
-    cfile = "config/" + socket.gethostname() + "_servo.yaml"
-    with open(cfile, 'r') as f:
-      data = yaml.load(f, Loader=yaml.FullLoader)
-
-    # servo usec-per-degree scale factors
-    self.gsc = data.get('g_sc', 13.6)
-    self.wsc = data.get('w_sc', 11.1)
-    self.esc = data.get('e_sc', 11.1)
-    self.ssc = data.get('s_sc', 11.1)
-    self.bsc = data.get('b_sc', 11.1)
-
-
-  # load "MasterPi/Deviation.yaml" file to get servo angle limits
-  # needs servo scaling factors loaded first
-
-  def load_dev(self):
-    data = yaml_handle.get_yaml_data(yaml_handle.Deviation_file_path)
-    self.w0 = -120.0;
-    self.w1 = self.wmid + (1000 - data['3']) / self.wsc
-    self.e0 = self.emid - (1000 + data['4']) / self.esc
-    self.e1 = self.emid + (1000 - data['4']) / self.esc
-    self.s0 = self.smid - (1000 + data['5']) / self.ssc
-    self.s1 = self.smid + (1000 - data['5']) / self.ssc
-    self.b0 = (1000 + data['6']) / -self.bsc
-    self.b1 = (1000 - data['6']) / self.bsc
-
-
   # power-on servos have unknown postions so move one at a time (4 sec)
 
   def init_servos(self, b, s, e, w, g):
     print("Posing arm servos ...")    
-    Board.setPWMServosPulse([1000, 1, 5, self.s_usec(s)])  # shoulder
+    self.bot.Joint(5, s - self.smid, 1.0)    # shoulder
     time.sleep(1)
-    Board.setPWMServosPulse([ 500, 1, 3, self.w_usec(w)])  # wrist
-    time.sleep(0.5)  
-    Board.setPWMServosPulse([1000, 1, 4, self.e_usec(e)])  # elbow
+    self.bot.Joint(3, w - self.wmid, 0.5)    # wrist
+    time.sleep(0.5)
+    self.bot.Joint(4, e - self.emid, 1.0)    # elbow
     time.sleep(1)
-    Board.setPWMServosPulse([1000, 1, 6, self.b_usec(b)])  # base
+    self.bot.Joint(6, b, 1.0)                # base
     time.sleep(1)
-    Board.setPWMServosPulse([ 500, 1, 1, self.g_usec(g)])  # gripper
+    self.bot.Joint(1, g, 0.5)                # gripper
     time.sleep(0.5)
 
 
@@ -218,8 +189,8 @@ class MpiArm:
   # sets servo time slightly long to achieve smooth overlap
 
   def Rate(self, hz):
-    self.cyc = 1.0 / hz
-    self.ms = int(1000 * self.lead * self.cyc + 0.5)  
+    self.cyc  = 1.0 / hz
+    self.secs = self.lead * self.cyc 
 
 
   # -----------------------------------------------------------------------
@@ -269,7 +240,7 @@ class MpiArm:
   # returns base, shoulder, elbow, wrist in degs wrt nominal
 
   def Home(self):
-    return 0.0, -40.0, 115.0, -15.0
+    return 0.0, 0.0, 50.0, -40.0
 
 
   # tell servo joint angles wrt nomimal in degrees
@@ -388,15 +359,18 @@ class MpiArm:
   # pick joint angles to make some sensor look at a target position
   # x,y,z in inches, origin is center of 4 wheels and floor (x to right) 
   # angles depend only on target, not current camera position
+  # can select device: 0 = tof, 1 = rgb, 2 = mix (compromise)
   # approximate: target generally not quite centered when finished
 
-  def LookAt(self, x, y, z, dev =0, speed =1.0):
+  def LookAt(self, x, y, z, dev =2, speed =1.0):
 
-    # get parameters that depend on sensor
+    # get parameters that depend on sensor 
     if dev <= 0:
       up = self.rr
-    else:
+    elif dev == 1:
       up = self.cr
+    else:
+      up = 0.5 * (self.rr + self.cr)
 
     # find distance and planar angle from shoulder to target
     d, p = dist_ang(y - self.sy, -x)
@@ -463,8 +437,11 @@ class MpiArm:
       self.linear_xyz()   
 
     # send angles to arm joints
-    ok, b, s, e, w = self.joint_cmd()                    
-    self.send_servos(b, s, e, w, g)
+    ok, b, s, e, w = self.joint_cmd() 
+    s -= self.smid
+    e -= self.emid
+    w -= self.wmid 
+    self.bot.Pose(b, s, e, w, g, self.secs)  
     return ok
 
 
@@ -585,48 +562,6 @@ class MpiArm:
     return 1, b, s, e, w
 
 
-  # send angle position commands to servo controller
-
-  def send_servos(self, b, s, e, w, g):
-    args =  [self.ms, 5]
-    args += [6, self.b_usec(b)]
-    args += [5, self.s_usec(s)]
-    args += [4, self.e_usec(e)]
-    args += [3, self.w_usec(w)]
-    args += [1, self.g_usec(g)]              
-    Board.setPWMServosPulse(args)
-
-
-  # base angle to servo pulse usecs (LD-1501)
-
-  def b_usec(self, b):
-    return int(1500 + self.bsc * b + 0.5)
-
-
-  # shoulder angle to servo pulse usecs (LXD-218)
-
-  def s_usec(self, s):
-    return int(1500 + self.ssc * (s - self.smid) + 0.5)
-
-
-  # elbow angle to servo pulse usecs (LFD-01M)
-
-  def e_usec(self, e):
-    return int(1500 + self.esc * (e - self.emid) + 0.5)
-
-
-  # wrist angle to servo pulse usecs (LFD-01M)
-
-  def w_usec(self, w):
-    return int(1500 + self.wsc * (w - self.wmid) + 0.5)
-
-
-  # gripper angle to servo pulse usecs (LFD-01M)
-
-  def g_usec(self, g):
-    return int(1500 + self.gsc * g + 0.5)
-
-
   # -----------------------------------------------------------------------
 
   # forward kinematics 
@@ -717,7 +652,8 @@ class MpiArm:
 # test moving arm in various ways
 
 if __name__ == "__main__":
-  a = MpiArm()
+  bot = MasterPi()
+  a = MpiArm(bot)
   time.sleep(2)
 
 
@@ -729,7 +665,7 @@ if __name__ == "__main__":
   a.Grip(1.5)
   for i in range(40):
     dev = a.ErrAng(b, s, e, w)
-    print("  %2d cmd = %6.2f %6.2f %6.2f %6.2f -> err %3.1f" % (i, a.bc, a.sc, a.ec, a.wc, dev))
+    print("  %2d cmd jts = [ %6.2f %6.2f %6.2f %6.2f ] -> err %3.1f" % (i, a.bc, a.sc, a.ec, a.wc, dev))
     a.Issue()
     time.sleep(a.cyc)
     if dev < 1:
@@ -747,7 +683,7 @@ if __name__ == "__main__":
     tdev = a.ErrTip(t)  
     xc, yc, zc = a.Position()
     pc, tc, rc = a.Orientation()
-    print("  %2d cmd @ (%6.2f %6.2f %6.2f) x %6.2f -> err %3.1f x %3.1f" % (i, xc, yc, zc, tc, dev, tdev))
+    print("  %2d cmd xyz = (%6.2f %6.2f %6.2f) x %6.2f -> err %3.1f x %3.1f" % (i, xc, yc, zc, tc, dev, tdev))
     a.Issue()
     time.sleep(a.cyc)
     if dev < 0.2 and tdev < 1:
@@ -764,7 +700,7 @@ if __name__ == "__main__":
     tdev = a.ErrTip(t)  
     xc, yc, zc = a.Position()
     pc, tc, rc = a.Orientation()
-    print("  %2d cmd @ (%6.2f %6.2f %6.2f) x %6.2f -> err %3.1f x %3.1f" % (i, xc, yc, zc, tc, dev, tdev))
+    print("  %2d cmd xyz = (%6.2f %6.2f %6.2f) x %6.2f -> err %3.1f x %3.1f" % (i, xc, yc, zc, tc, dev, tdev))
     a.Issue()
     time.sleep(a.cyc)
     if dev < 0.2 and tdev < 1:

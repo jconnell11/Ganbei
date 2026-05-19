@@ -3,13 +3,13 @@
 
 # =========================================================================
 #
-# spout_wrap.py : Python wrapper for speech output on MasterPi robot
+# mpi_spout.py : Python wrapper for TTS on MasterPi robot
 #
 # Written by Jonathan H. Connell, jconnell@alum.mit.edu
 #
 # =========================================================================
 #
-# Copyright 2023-2025 Etaoin Systems
+# Copyright 2025-2026 Etaoin Systems
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,88 +26,90 @@
 # =========================================================================
 
 import time                            # for testing
-from ctypes import CDLL
+from ctypes import CDLL, c_float
   
-lib = CDLL('lib/libmpi_spout.so')   
+#lib = CDLL('lib/libmpi_face.so')       # TTS + animated face
+lib = CDLL('lib/libmpi_spout.so')      # TTS only option
+
+lib.face_gaze.argtypes = [c_float, c_float, c_float]
 
 
-# Python wrapper for speech output on MasterPi robot
+# Python wrapper for TTS on MasterPi robot (and possibly animated face)
+# needs: sudo apt install festival festival-dev soundstretch
 
-class MpiSpout:
+class MpiFace:
 
-  # create and configure Text-to-Speech system
-  # if sh > 0 then shifts frequency more or less than 100%
+  # create and configure animated face and Text-to-Speech system
+  # "dir" is where to find subdirs "config" and "mesh" with face geometry
   # returns 1 if successful, 0 or negative for problem
 
-  def Start(self, sh =120):
-    return lib.spout_start(sh)
+  def Start(self, dir):
+    return lib.face_start(dir.encode())
 
 
-  # set prosody for some emotional state
-  # 0 bored, 1 happy, 2 sad, 3 angry, 4 scared, 5 excited
+  # set expression and prosody for next utterance based on mood bits
+  # [ surprised angry scared happy : unhappy bored lonely tired ]
+  # high-order bytes contain "very" bits for corresponding conditions
 
-  def Emotion(self, feel =6, very =0):
-    lib.spout_emo(feel, very)
+  def Mood(self, bits =0x0000):
+    lib.face_mood(bits)
 
 
   # convert text to audio and start playing (does not block)
 
   def Say(self, txt):
-    lib.spout_say(txt.encode())
+    lib.face_say(txt.encode())
 
 
-  # determine raw color code for sonar LEDs at the current time
-  # returns pre-corrected 0xRRGGBB value, negative if not talking
+  # turn eyes to the "paying attention" color (1) or normal (0)
+  # Note: dummy function for compatibility with mpi_face.so
+
+  def Stare(self, doit):
+    return lib.face_stare(doit)
+
+
+  # progressively angle the head in some direction at some speed
+  # Note: dummy function for compatibility with mpi_face.so
+
+  def Gaze(self, pan, tilt, dps =0.0):
+    lib.face_gaze(pan, tilt, dps)
+
+
+  # report TTS status for "sock puppet" mouth animation.
+  # returns: -1 = silent, 0 = mouth closed, 1 = mouth open
 
   def Mouth(self):
-    return lib.spout_mouth()
+    return lib.face_mouth()
 
 
   # cleanly shut down system
 
   def Done(self):
-    lib.spout_done()
+    lib.face_done()
 
 
 # =========================================================================
 
-# simple test program for single utterance
+# simple test program for some utterances
 
 if __name__ == "__main__":
-  tts = MpiSpout();
-  old = -1
-  col = -1
-  tts.Start()
+  face = MpiFace()
+  face.Start("/home/pi/Ganbei")
 
-  # mouth color test
+  # default settings
   print('--- hello there dude ---')
-  tts.Say("hello there dude")
-  while col < 0:                       # wait for audio start
-    time.sleep(0.033)
-    col = tts.Mouth()
-  while col >= 0:                      # wait for audio finish
-    if col != old:
-      print('  LED = ' + hex(col))     # show change of color
-      old = col
-    time.sleep(0.033)
-    col = tts.Mouth()
+  face.Say("hello there dude")
+  time.sleep(2)
 
-  # emotional prosody variations
+  # angled, staring, happy speech
   print("\n--- the blue block is right next to the red thing ---")
-  mood = ['bored', ' tired', 'happy', ' pleased', 'sad', ' discontent', 
-          'angry', ' annoyed', 'scared', ' wary', 'excited', ' neutral']
-  for feel in range(6):
-    for mild in range(2):
-      print("  " + mood[2 * feel + mild])
-      tts.Emotion(feel, 1 - mild)
-      tts.Say("the blue block is right next to the red thing");
-      while tts.Mouth() < 0:                       
-        time.sleep(0.033)
-      while tts.Mouth() >= 0:                   
-        time.sleep(0.033)
-      time.sleep(1);
+  face.Stare(1)
+  face.Mood(0x0)
+  face.Gaze(-30.0, -20.0)
+  face.Say("the blue block is right next to the red thing")
+  time.sleep(5)  
 
   # cleanup
-  tts.Done()
+  face.Done()
   print('\n--- audio done ---')
    

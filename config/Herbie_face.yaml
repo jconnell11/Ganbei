@@ -1,8 +1,9 @@
-face_width  : 640            # pixels
+face_width  : 640            # pixel dimensions
 face_height : 480
+face_xshift : 0              # centered in screen
 face_model  : "GiGo"         # no eyelashes
 
-face_skin   : 0xFFC020       # light orange head
+face_skin   : 0xFF8020       # light orange head
 face_back   : 0x000000       # black backdrop
 face_brows  : 0xA04040       # brown eyebrows
 face_eyes   : 0x000000       # black eye surrounds
@@ -15,6 +16,7 @@ voice_infl  : 15             # some inflection
 voice_shift : 120            # kid formants (+20%)
 voice_slow  : 120            # medium slow
 voice_drama : 100            # normal excitability
-voice_loud  : 100            # max volume
+voice_loud  : 0              # user set volume
+
 
 

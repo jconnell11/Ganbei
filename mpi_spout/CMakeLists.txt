@@ -12,6 +12,7 @@ include_directories(
   SYSTEM
 )
 
+
 ###########
 ## Build ##
 ###########
@@ -20,15 +21,16 @@ include_directories(
 set(CMAKE_BUILD_TYPE Release)	
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "lib")
 
-# Make shared library 
+# Make shared library (TTS only) --------------------------
+
 add_library(mpi_spout SHARED
   src/mpi_spout.cpp
-  src/jhcMpiSpout.cpp
   src/jhcFestTTS.cpp
 )
 
-# Required input libraries
+# Required input libraries for shared lib
 target_link_libraries(mpi_spout
-  libasound.so
   pthread
 )
+
+

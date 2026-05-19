@@ -1,0 +1,44 @@
+// terms associated with "Support" ops and rules
+// ================================================
+
+// singular nouns
+
+=[AKO]
+  surface
+  floor
+
+
+// adjectives
+
+=[HQ]
+  close
+  medium close
+  far
+  low
+  medium high
+  high
+  left 
+  middle
+  right
+
+
+// -----------------------------------------
+
+// imperative verbs
+
+=[ACT]
+  look
+  approach
+
+
+// ================================================
+
+// irregular morphologies (npl, acomp, asup, vpres, vprog, vpast)
+
+=[XXX-morph]
+  far * acomp = farther
+  far * asup  = farthest
+
+
+
+

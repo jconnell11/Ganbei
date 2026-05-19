@@ -1,0 +1,12 @@
+[Unit]
+Description=Battery Alarm
+
+[Service]
+Type=simple
+User=pi
+Restart=always
+RestartSec=2
+ExecStart=/usr/bin/python /home/pi/Ganbei/scripts/mpi_battery.py 
+
+[Install]
+WantedBy=multi-user.target

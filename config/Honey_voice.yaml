@@ -1,0 +1,8 @@
+voice_freq  : 250            # hi female fundamental
+voice_infl  : 15             # some inflection
+voice_shift : 120            # kid formants (+20%)
+voice_slow  : 120            # medium slow
+voice_drama : 100            # normal excitability
+voice_loud  : 0              # user set volume
+
+
