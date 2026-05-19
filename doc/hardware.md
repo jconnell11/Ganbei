@@ -39,7 +39,7 @@ After this, run the right-angle USB C cable through the back hole in the orginal
 
 ## Animated Face
 
-This is a totally optional upgrade but, if you want, you can add a face as shown in this [__video__](Herbie_face.mp4). This uses a 3.5" DSI-connected [LCD panel](https://www.amazon.com/dp/B0G2SFFZLQ) from Waveshare ($45) mounted to the font bumper of the robot. Since this is where the sonar normally lives, you need to first remove the top two screws holding the sonar panel in place then set the subassembly aside for later.
+This is a totally optional upgrade but, if you want, you can add a face as shown in this [__video__](https://youtu.be/us3D3ikTyqY). This uses a 3.5" DSI-connected [LCD panel](https://www.amazon.com/dp/B0G2SFFZLQ) from Waveshare ($45) mounted to the font bumper of the robot. Since this is where the sonar normally lives, you need to first remove the top two screws holding the sonar panel in place then set the subassembly aside for later.
 
 ![LCD mounting](face_mount_mark.jpg)
 
