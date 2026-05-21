@@ -37,6 +37,8 @@ Remove the back 2 screws on the top camera mounting standoffs then reinstall the
 
 After this, run the right-angle USB C cable through the back hole in the orginal camera mount then up to the left side of the sensor. You also need to add 2 __tiewraps__ to the camera cable where it exists the camera mount, since wiggling the cable often causes the camera to drop out! The TOF cable then follows the camera cable down along the outside of the arm (remove and reinstall the 2 loose tiewraps holding the pair close). Finally, run the TOF cable under the left edge of the back shell and across to the USB splitter connector newly installed on the right side of the robot.
 
+Although not needed, the source code for the imaging depth sensor can be found in [tof_cam](https://github.com/jconnell11/tof_cam).
+
 ## Animated Face
 
 This is a totally optional upgrade but, if you want, you can add a face as shown in this [__video__](https://youtu.be/us3D3ikTyqY). This uses a 3.5" DSI-connected [LCD panel](https://www.amazon.com/dp/B0G2SFFZLQ) from Waveshare ($45) mounted to the font bumper of the robot. Since this is where the sonar normally lives, you need to first remove the top two screws holding the sonar panel in place then set the subassembly aside for later.
