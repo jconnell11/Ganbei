@@ -36,7 +36,7 @@ Doing this requires editing more configuration values. The first number after "g
 
 ## Camera Calibration
 
-Finally, you need to get the range-finder and color camera to agree on where objects are. If you change the TOF calibration (above) you will likely need to redo this color calibration. Invoke demo mode and enter the request given below. The right hand image will now show a mask where the portion of the color image corresponding to the nearast object shows through. 
+Finally, you need to get the range-finder and color camera to agree on where objects are. If you change the TOF calibration (above) you will likely need to redo this color calibration. Invoke demo mode and enter the request given below. The right hand image will now show a mask where the portion of the color image corresponding to the nearest object shows through. 
 
     demo 6
     > look down

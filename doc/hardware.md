@@ -53,6 +53,8 @@ Finally, you need to set up the __software environment__. Edit the beginning of 
 
     sudo nano /boot/firmware/config.txt
 
+Although not needed, the source code for the face can be found in [hmore_face](https://github.com/jconnell11/hmore_face) under the [mpi_face](https://github.com/jconnell11/hmore_face/tree/main/mpi_face) subdirectory.
+
 ---
 
 May 2026 - Jonathan Connell - jconnell@alum.mit.edu
