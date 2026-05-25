@@ -16,7 +16,7 @@ The first thing to do is make sure you are running 64bit Raspbian Bookworm (Mast
 
 Start by downloading the Raspberry [Pi Imager](https://www.raspberrypi.com/software/) for Windows (or equivalent) and fire it up. For device select "Pi 4", then for OS select "Raspberry Pi OS (other)" followed by "Raspberry Pi OS (Legacy, 64bit)". After this, insert a blank 32GB SDHC card and add customizations for host, user, wifi, and SSH. You should use your robot name (e.g. "Herbie") as the host name, "pi" as the user name, and enable SSH with password authentication. Finally, write the image to the card then plug it into the slot at the front of the Pi board. 
 
-Power on the robot and SSH into the machine via wifi using [PuTTY](https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html) (on Windows). Run the command "sudo raspi-config" and under "Interface Options" enable both VNC and I2C. After reboot the machine should then be accessible via the more convenient RealVNC instead. 
+Power on the robot and SSH into the machine via wifi using [PuTTY](https://www.chiark.greenend.org.uk/~sgtatham/putty/latest.html) (on Windows). Run the command "sudo raspi-config" and under "Advanced Options / Wayland" select "X11", also under "Interface Options" enable both VNC and I2C. After reboot the machine should then be accessible via the more convenient RealVNC instead. 
 
 ### OpenCV with Neural Nets
 
