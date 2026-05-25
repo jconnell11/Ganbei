@@ -1,6 +1,6 @@
 # Hardware Modifications
 
-First, assemble the MasterPi robot following Hiwonder's instructions. This takes roughly __3 hours__. If you are using your own Pi 4 board, make sure to install the heatsinks are shown [here](https://m.media-amazon.com/images/I/61Ohaathb0L._SL1001_.jpg).
+First, assemble the MasterPi robot following Hiwonder's instructions. This takes roughly 3 hours. If you are using your own Pi 4 board, make sure to affix the __heatsinks__ are shown [here](https://m.media-amazon.com/images/I/61Ohaathb0L._SL1001_.jpg). Then, using four leftover M3*10 screws, install the __fan__ under the circular hole in the back of the chassis with its label facing up. You will have to splice some extra wire into the leads to be able to reach servo connector 2 on the expansion board.
 
 The sonar transducers on the front are never used for ranging. Instead, the associated LEDs are used for expressing internal state. To make the colors more visible from various angles, apply a piece of white __vinyl tape__ to the front of each shiny tube. Trim around the periphery using an X-acto knife.
 
