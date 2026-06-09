@@ -51,7 +51,7 @@ The panel connects to the front of the Pi 4 board using the white 160mm [FPC 15p
 
 Next, reroute the sonar cable and remount the sensors to the front of the battery case underneath the robot using two small pads of Gorilla tape. Now there will be a pulsing puddle of light in front of the robot when it speaks.
 
-Finally, you need to set up the __software environment__. Edit the beginning of the [mpi_spout.py](../scripts/mpi_spout.py) file in the Ganbei/scripts directory so that it loads the animated face library instead of just the plan TTS library. Then edit [config.txt](../deb12_files/boot/firmware/config.txt) in the /boot/firmware directory to uncomment the very last line. 
+Finally, you need to set up the __software environment__. Edit the beginning of the [mpi_spout.py](../project/scripts/mpi_spout.py) file in the Ganbei/scripts directory so that it loads the animated face library instead of just the plan TTS library. Then edit [config.txt](../project/deb12_files/boot/firmware/config.txt) in the /boot/firmware directory to uncomment the very last line. 
 
     sudo nano /boot/firmware/config.txt
 

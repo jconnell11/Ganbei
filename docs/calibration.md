@@ -2,7 +2,7 @@
 
 ## Microsoft Azure Credentials
 
-The system is default coded to use Microsoft Azure speech recognition, which is essentially __free__ for low intensity usage. However, you will need credentials to access this on-line service. Start by signing up [here](https://portal.azure.com/#create/Microsoft.CognitiveServicesSpeechServices) (possibly making a Microsoft account first) then select "Speech Services" and "+ Create". Finally, click "Manage keys" and modify local configuration file [Herbie_azure](../config/Herbie_azure.yaml) (or whatever your robot's name is) with valid "Key" and "Location" strings. This only needs to be done once.
+The system is default coded to use Microsoft Azure speech recognition, which is essentially __free__ for low intensity usage. However, you will need credentials to access this on-line service. Start by signing up [here](https://portal.azure.com/#create/Microsoft.CognitiveServicesSpeechServices) (possibly making a Microsoft account first) then select "Speech Services" and "+ Create". Finally, click "Manage keys" and modify local configuration file [Herbie_azure](../project/config/Herbie_azure.yaml) (or whatever your robot's name is) with valid "Key" and "Location" strings. This only needs to be done once.
 
 ## Arm Calibration
 
@@ -14,11 +14,11 @@ To further refine the calibration, follow up by running the related command belo
 
     python mpi_grab_cal.py
 
-Both these utilities will automatically write new values to the configuration file [Herbie_servo](../config/Herbie_servo.yaml) (or whatever your robot's name is). 
+Both these utilities will automatically write new values to the configuration file [Herbie_servo](../project/config/Herbie_servo.yaml) (or whatever your robot's name is). 
 
 ## TOF Calibration
 
-This is needed for proper hand-eye coordination and is controlled by the [Herbie_cam](../config/Herbie_cam.cal) file (or whatever your robot's name is). The file has a single line beginning with "grok_cal" whose fields are as shown below. The first 3 values are for the time-of-flight sensor while the second 3 values are for the color camera. You must edit this file manually.
+This is needed for proper hand-eye coordination and is controlled by the [Herbie_cam](../project/config/Herbie_cam.cal) file (or whatever your robot's name is). The file has a single line beginning with "grok_cal" whose fields are as shown below. The first 3 values are for the time-of-flight sensor while the second 3 values are for the color camera. You must edit this file manually.
 
     grok_cal  tof_pan tof_tilt tof_roll  cam_pan cam_tilt cam_roll
 
@@ -41,7 +41,7 @@ Finally, you need to get the range-finder and color camera to agree on where obj
     demo 6
     > look down
 
-Place an elongated object in front of the robot and adjust the camera's __roll__ until the mask is at the same angle as the object (the alignment is likely to be far off). As before, edit the configuration file [Herbie_cam](../config/Herbie_cam.cal) fiddling with the final value in the line, then restart the program. Keep trying different values (higher numbers rotate the mask _clockwise_) until the mask and the object are parallel.
+Place an elongated object in front of the robot and adjust the camera's __roll__ until the mask is at the same angle as the object (the alignment is likely to be far off). As before, edit the configuration file [Herbie_cam](../project/config/Herbie_cam.cal) fiddling with the final value in the line, then restart the program. Keep trying different values (higher numbers rotate the mask _clockwise_) until the mask and the object are parallel.
 
 Next, fix up the __pan__ and __tilt__ compensation values. For this it is often easier to look at the object bounding box in the left hand image. Increasing the fourth value in the line moves the box _right_, while increasing the fifth value moves the box _down_. Again, iterate between running the system and editing the file until the box is nicely centered on the object. At this point the mask on the right hand side should show only the object, no table fragments around it.
 

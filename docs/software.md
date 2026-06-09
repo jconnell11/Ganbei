@@ -43,9 +43,9 @@ Cleanup the downloads at the end:
 
 ### Additions and Substitutions
 
-Start by copying over the entire Git directory to /home/pi/Ganbei. This is the ALIA reasoning library, a bunch of configuration files of various types, and the Python interface code. It also contains a subproject for offline text-to-speech ([mpi_spout](../mpi_spout)) and for background color framegrabbing ([mpi_cam](../mpi_cam)). The source code for generating the Time-of-Flight driver can be downloaded separately from [tof_cam](https://github.com/jconnell11/tof_cam) if you are interested. You do __not__ need to compile any of these projects since all the shared libraries are already included in the lib/ subdirectory.
+Start by copying over the entire Git directory to /home/pi/Ganbei. This is the ALIA reasoning library, a bunch of configuration files of various types, and the Python interface code. It also contains a subproject for offline text-to-speech ([mpi_spout](../project/mpi_spout)) and for background color framegrabbing ([mpi_cam](../project/mpi_cam)). The source code for generating the Time-of-Flight driver can be downloaded separately from [tof_cam](https://github.com/jconnell11/tof_cam) if you are interested. You do __not__ need to compile any of these projects since all the shared libraries are already included in the lib/ subdirectory.
 
-Next, the directory [deb12_files](../deb12_files) contains a number of files to add or substitute for similarly named versions in various locations. The subdirectory names are condensed versions of the full pathnames where things belong so, for instance, home_pi should be copied to /home/pi. Note that the items in [usr_local_bin](../deb12_files/usr_local_bin) will need to be marked as executable before being moved to /usr/local/bin.
+Next, the directory [deb12_files](../project/deb12_files) contains a number of files to add or substitute for similarly named versions in various locations. The subdirectory names are condensed versions of the full pathnames where things belong so, for instance, home_pi should be copied to /home/pi. Note that the items in [usr_local_bin](../project/deb12_files/usr_local_bin) will need to be marked as executable before being moved to /usr/local/bin.
 
 ### System Configuration
 
