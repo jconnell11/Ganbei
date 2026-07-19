@@ -1,5 +1,5 @@
 # Ganbei
-## An Inexpensive Mobile Manipulator
+## Speech-Controlled Robot
 
 This repository contains instructions and code for creating a small, cheap ($450) robot with verbal interaction, symbolic learning, an arm, and 3D sensing. It is a lightly modified version of the [Master Pi](https://www.hiwonder.com/products/masterpi?variant=39783006994519) platform available from Hiwonder. The robot uses the [ALIA](https://github.com/jconnell11/ALIA) cognitive library along with Python support code to run on a Raspberry Pi 4b. Check out this [__video__](https://youtu.be/ncSaZPBFY3k) of Herbie autonomously stacking blocks.
 
