@@ -24,12 +24,12 @@ This is needed for proper hand-eye coordination and is controlled by the [Herbie
 
 To calibrate the TOF sensor, first place the robot in environment where it has a large expanse of floor in front of it. Then fire up the complete system in debug mode using the command below, and enter the ALIA request shown. Now manually copy the displayed "dr" value to the third number in the calibration file. This corresponds to the __roll__ of the sensor.
 
-    demo 3
+    demo 5
     > look slightly down
 
 The next calibration step needs to be repeated any time the arm servo parameters (above) get changed. Place a small block directly in front of the robot so that its _center_ is 4" (10cm) in front of the bumper. Run the command below and enter the subsequent ALIA request. You want the displayed object position to read (0.0 7.7) within +/- 0.2 inches. 
 
-    demo 4
+    demo 7
     > look far down
 
 Doing this requires editing more configuration values. The first number after "grok_cal" affects the __pan__ of the sensor – a higher value here makes the displayed x coordinate _smaller_. Similarly, the second value changes the __tilt__ compensation – a higher value for this parameter makes the y coordinate _larger_.  Hit ESC to exit ALIA, change the values, then re-run the procedure until the reported object position becomes reasonably accurate. 
@@ -38,7 +38,7 @@ Doing this requires editing more configuration values. The first number after "g
 
 Finally, you need to get the range-finder and color camera to agree on where objects are. If you change the TOF calibration (above) you will likely need to redo this color calibration. Invoke demo mode and enter the request given below. The right hand image will now show a mask where the portion of the color image corresponding to the nearest object shows through. 
 
-    demo 6
+    demo 9
     > look down
 
 Place an elongated object in front of the robot and adjust the camera's __roll__ until the mask is at the same angle as the object (the alignment is likely to be far off). As before, edit the configuration file [Herbie_cam](../project/config/Herbie_cam.cal) fiddling with the final value in the line, then restart the program. Keep trying different values (higher numbers rotate the mask _clockwise_) until the mask and the object are parallel.

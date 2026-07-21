@@ -44,32 +44,35 @@ You can ask general questions, tell the robot to perform certain motions, ask it
 
 You can also type to the robot if you prefer that to speaking. The easiest way is to connect via RealVNC and type the command "demo" (or alternatively "cd ~/Ganbei" then "python Ganbei_vis.py"). The conversation line includes very limited editing such as backspace, up arrow (recall previous), and delete (start over). It will autocorrect some mis-typings (after ENTER is pressed). No attention word is necessary when typing.
 
-If the "demo" command is given a numeric argument it can display internal images. The left hand panel is always the dewarped color image with important objects marked, while the right hand panel depends on the argument given.
+If the "demo" command is given a numeric argument it can display internal images. The left hand panel is always the dewarped color image with important objects marked, while the right hand panel depends on the argument given. Also, for any mode > 1 the gaze attentional routines (e.g. motion) are disabled to aid debugging.
 
 <small>
 
      0 = none
      1 = integrated navigation overhead map
-     2 = front-facing false color depth 
 
-     3 = object deviations from flat
-     4 = object overhead height map
-     5 = forward range with object boxes
-     6 = object mask, dims, and colors
-     7 = table location for object deposit
+     2 = front-facing monochrome depth 
+     3 = person overhead height map 
+     4 = floor pixel offset graph
 
-     8 = current near floor heights 
-     9 = deviations from planar floor
-    10 = current obstacle classification
-    11 = traversable regions + sensors
+     5 = object deviations from flat
+     6 = discrete objects and table
+     7 = object overhead height map
+     8 = forward range with object boxes
+     9 = object mask, dims, and colors
+    10 = table location for object deposit
 
-    12 = person overhead height map 
-    13 = potential people over min height 
-    14 = person head and shoulders
-    15 = person gaze direction
+    11 = current near floor heights 
+    12 = deviations from planar floor
+    13 = current obstacle classification
+    14 = traversable regions + sensors
 
-    16 = sound direction wrt heads
-    17 = visual motion regions
+    15 = potential people over min height 
+    16 = person head and shoulders
+    17 = person gaze direction
+
+    18 = sound direction wrt heads
+    19 = visual motion regions
 
 </small>
 
