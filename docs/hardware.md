@@ -25,7 +25,7 @@ The speaker and the audio dongle are attached to the sides of the arm base box (
 
 ![USB Cables](USB_cables_mark.jpg)
 
-The Waveshare device does not seem to play well with other USB peripherals (at least on the Raspberry Pi) so it is isolated with a USB __splitter__ box. To install this, start by wrapping the input lead of the splitter once around the back brass support post and plugging it into the lower middle USB port of the Rapsberry Pi. Next, wrap the lower output lead of the splitter once around the front brass support post and plug it into the Waveshare unit. Feed the top lead under this one and mount its connector vertically to the main chassis with a small piece of Gorilla tape. It should be pretty far forward and have its strain-relief section smashed up against the brass support post. The cable from the Time-of-Flight sensor will plug in here.
+The Waveshare device does not seem to play well with other USB peripherals (at least on the Raspberry Pi) so it is isolated with a USB __splitter__ box. To install this, start by wrapping the input lead of the splitter once around the back brass support post and plugging it into the lower middle USB port of the Raspberry Pi. Next, wrap the lower output lead of the splitter once around the front brass support post and plug it into the Waveshare unit. Feed the top lead under this one and mount its connector vertically to the main chassis with a small piece of Gorilla tape. It should be pretty far forward and have its strain-relief section smashed up against the brass support post. The cable from the Time-of-Flight sensor will plug in here.
 
 ## TOF Mounting
 
@@ -35,7 +35,7 @@ The Time-of-Flight sensor produces a 100x100 depth image at about 18Hz that is u
 
 Remove the back 2 screws on the top camera mounting standoffs then reinstall them with the new bracket on top with the "shelf" section forward. Affix the TOF sensor to the shelf on top using a small strip of Gorilla __tape__ so that its left side is flush with the end of the bracket. Snip off the plastic mounting lugs on the right side of the sensor. 
 
-After this, run the right-angle USB C cable through the back hole in the orginal camera mount then up to the left side of the sensor. You also need to add 2 __tiewraps__ to the camera cable where it exists the camera mount, since wiggling the cable often causes the camera to drop out! The TOF cable then follows the camera cable down along the outside of the arm (remove and reinstall the 2 loose tiewraps holding the pair close). Finally, run the TOF cable under the left edge of the back shell and across to the USB splitter connector newly installed on the right side of the robot.
+After this, run the right-angle USB C cable through the back hole in the original camera mount then up to the left side of the sensor. You also need to add 2 __tiewraps__ to the camera cable where it exists the camera mount, since wiggling the cable often causes the camera to drop out! The TOF cable then follows the camera cable down along the outside of the arm (remove and reinstall the 2 loose tiewraps holding the pair close). Finally, run the TOF cable under the left edge of the back shell and across to the USB splitter connector newly installed on the right side of the robot.
 
 Although not needed, the source code for the imaging depth sensor can be found in [tof_cam](https://github.com/jconnell11/tof_cam).
 
@@ -45,7 +45,7 @@ This is a totally optional upgrade but, if you want, you can add a face as shown
 
 ![LCD mounting](face_mount_mark.jpg)
 
-The panel connects to the front of the Pi 4 board using the white 160mm [FPC 15pin](https://www.waveshare.com/wiki/3.5inch_DSI_LCD_(E)) cable supplied with the LCD. Route this cable __flat__ under the rotation servo at the base of the arm. Affix a flap of Gorilla tape to the top of the sonar box as shown above, and also add a pad of Gorilla tape to the angled protion of the front bumper as shown below. Center the panel then push firmly into place onto the tape.
+The panel connects to the front of the Pi 4 board using the white 160mm [FPC 15pin](https://www.waveshare.com/wiki/3.5inch_DSI_LCD_(E)) cable supplied with the LCD. Route this cable __flat__ under the rotation servo at the base of the arm. Affix a flap of Gorilla tape to the top of the sonar box as shown above, and also add a pad of Gorilla tape to the angled portion of the front bumper as shown below. Center the panel then push firmly into place onto the tape.
 
 ![Sonar relocation](face_sonar_mark.jpg)
 
